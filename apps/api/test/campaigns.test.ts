@@ -400,26 +400,6 @@ describe('campanhas, envio e automação', () => {
     env.ctx.config.sending.allowlist = [];
   });
 
-  test('nova conversa manual: usa o JID confirmado e respeita a lista de teste', async () => {
-    env.ctx.config.sending.allowlist = ['+5512991810649'];
-    env.wa.checkImpl = async (numbers) => numbers.map((n) => ({ number: n, outcome: 'found' as const, jid: '551291810649@s.whatsapp.net', error: null }));
-    const r = await api<{ id: number; whatsapp: string }>('POST', '/inbox/conversations', { phone: '+55 12 99181-0649' });
-    assert.equal(r.status, 200, JSON.stringify(r.body));
-    assert.equal(r.body.whatsapp, 'found');
-    const sent = await api<{ status: string }>('POST', `/inbox/conversations/${r.body.id}/messages`, { text: 'Olá, teste', clientKey: 'start-conv-0001' });
-    assert.equal(sent.body.status, 'accepted');
-    assert.equal(env.wa.sent[0]?.jid, '551291810649@s.whatsapp.net', 'envia ao JID confirmado pelo gateway');
-
-    const other = await api<{ id: number }>('POST', '/inbox/conversations', { phone: '+55 11 98888-7777' });
-    const blocked = await api<{ status: string }>('POST', `/inbox/conversations/${other.body.id}/messages`, { text: 'x', clientKey: 'start-conv-0002' });
-    assert.equal(blocked.body.status, 'failed', 'fora da lista de teste');
-    assert.equal(env.wa.sent.length, 1);
-
-    const invalid = await api('POST', '/inbox/conversations', { phone: '12345' });
-    assert.equal(invalid.status, 400);
-    env.ctx.config.sending.allowlist = [];
-  });
-
   test('mensagem automática do destinatário não avança a abordagem', async () => {
     const a = await lead('Auto', '+5511912340002');
     const c = await campaign('A', 'landing_page', offerIds.landingOfferId);

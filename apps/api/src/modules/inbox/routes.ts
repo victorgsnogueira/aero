@@ -1,16 +1,12 @@
 import { Type, type FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import { and, desc, eq, lt, sql } from 'drizzle-orm';
 import { CONVERSATION_STATES } from '@aero/shared';
-import { campaignContacts, campaigns, conversations, messages, phones } from '../../db/schema.ts';
+import { campaignContacts, campaigns, conversations, messages } from '../../db/schema.ts';
 import { Merge, IdParams, Nullable, Pagination, StringEnum, iso, pageArgs } from '../../lib/schemas.ts';
 import { badRequest, conflict, notFound } from '../../core/errors.ts';
 import { audit } from '../../core/audit.ts';
 import { sendMessage, type Message } from '../messaging/sender.ts';
 import { storeMedia } from '../messaging/media.ts';
-import { getSettings } from '../settings/service.ts';
-import { normalizePhone, e164ToJid } from '../../lib/phone.ts';
-import { ensureConversation } from './conversations.ts';
-import { ensureSessionRow, getSessionKey } from '../whatsapp/session.ts';
 
 const presentMessage = (m: Message) => ({
   id: m.id,
@@ -159,55 +155,6 @@ export const inboxRoutes: FastifyPluginAsyncTypebox = async (app) => {
   });
 
   /** Assumir: pausa a automação e cancela ações automáticas pendentes. */
-  /**
-   * Inicia (ou reabre) uma conversa manual com um número. Confere a existência
-   * no WhatsApp pelo gateway e usa o JID confirmado (pode diferir do E.164,
-   * ex.: celulares brasileiros sem o nono dígito). Não envia nada.
-   */
-  app.post(
-    '/conversations',
-    { schema: { tags: ['inbox'], body: Type.Object({ phone: Type.String({ minLength: 6, maxLength: 32 }) }) } },
-    async (req) => {
-      const settings = await getSettings(db);
-      const n = normalizePhone(req.body.phone, settings.defaultCountry);
-      if (n.formatStatus !== 'valid' || !n.e164) throw badRequest('invalid_phone', `Número inválido: ${n.note ?? 'formato não reconhecido'}`);
-      const session = await ensureSessionRow(db, getSessionKey(ctx));
-      let waJid: string | null = null;
-      try {
-        const [r] = await ctx.wa.checkNumbers(getSessionKey(ctx), [n.e164.replace(/^\+/, '')]);
-        if (r?.outcome === 'not_found') throw badRequest('whatsapp_not_found', 'Este número não tem WhatsApp');
-        if (r?.outcome === 'found') waJid = r.jid;
-      } catch (err) {
-        if ((err as { code?: string }).code === 'whatsapp_not_found') throw err;
-        // Gateway indisponível: segue com o JID derivado do número (o envio informará o resultado)
-      }
-      const convId = await db.transaction(async (tx) => {
-        await tx
-          .insert(phones)
-          .values({
-            e164: n.e164,
-            dedupeKey: n.dedupeKey,
-            rawSample: n.raw.slice(0, 64),
-            countryCode: n.countryCode,
-            formatStatus: 'valid',
-            lineType: n.lineType,
-            waStatus: waJid ? 'found' : 'pending',
-            waJid,
-            waCheckedAt: waJid ? ctx.now() : null,
-          })
-          .onDuplicateKeyUpdate({
-            set: waJid ? { waJid, waStatus: 'found', waCheckedAt: ctx.now() } : { updatedAt: ctx.now() },
-          });
-        const [phone] = await tx.select().from(phones).where(eq(phones.dedupeKey, n.dedupeKey));
-        const conv = await ensureConversation(tx, { sessionId: session.id, phoneId: phone!.id, jid: phone!.waJid ?? e164ToJid(n.e164!) });
-        if (phone!.waJid && conv.jid !== phone!.waJid) await tx.update(conversations).set({ jid: phone!.waJid }).where(eq(conversations.id, conv.id));
-        await audit(tx, 'owner', 'conversation.start', 'conversation', conv.id);
-        return conv.id;
-      });
-      return { id: convId, e164: n.e164, whatsapp: waJid ? 'found' : 'unverified' };
-    },
-  );
-
   app.post('/conversations/:id/takeover', { schema: { tags: ['inbox'], params: IdParams } }, async (req) => {
     await db.transaction(async (tx) => {
       const [c] = await tx.select().from(conversations).where(eq(conversations.id, req.params.id)).for('update');
