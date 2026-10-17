@@ -1,0 +1,6205 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "aero API",
+    "version": "0.1.0",
+    "description": "API interna do aero (uso exclusivo do proprietário)."
+  },
+  "components": {
+    "schemas": {}
+  },
+  "paths": {
+    "/api/health/live": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/health/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "detail"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "senderName",
+                    "companyName",
+                    "introduction",
+                    "defaultTimezone",
+                    "defaultCountry",
+                    "sendMinIntervalSeconds",
+                    "sendDailyLimit",
+                    "sendHourlyLimit",
+                    "validationRevalidateDays",
+                    "validationBatchSize",
+                    "validationMinIntervalMs",
+                    "scanDefaultDepth",
+                    "scanUnitMaxSeconds",
+                    "missingForOutreach",
+                    "sendingEnabled",
+                    "sendAllowlistActive",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "senderName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "companyName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "introduction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "defaultTimezone": {
+                      "type": "string"
+                    },
+                    "defaultCountry": {
+                      "type": "string"
+                    },
+                    "sendMinIntervalSeconds": {
+                      "type": "integer"
+                    },
+                    "sendDailyLimit": {
+                      "type": "integer"
+                    },
+                    "sendHourlyLimit": {
+                      "type": "integer"
+                    },
+                    "validationRevalidateDays": {
+                      "type": "integer"
+                    },
+                    "validationBatchSize": {
+                      "type": "integer"
+                    },
+                    "validationMinIntervalMs": {
+                      "type": "integer"
+                    },
+                    "scanDefaultDepth": {
+                      "type": "integer"
+                    },
+                    "scanUnitMaxSeconds": {
+                      "type": "integer"
+                    },
+                    "missingForOutreach": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "sendingEnabled": {
+                      "type": "boolean",
+                      "description": "Interruptor global SENDING_ENABLED (ambiente)"
+                    },
+                    "sendAllowlistActive": {
+                      "type": "boolean"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "settings"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "senderName": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "nullable": true
+                  },
+                  "companyName": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "nullable": true
+                  },
+                  "introduction": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "nullable": true
+                  },
+                  "defaultTimezone": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "defaultCountry": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}$"
+                  },
+                  "sendMinIntervalSeconds": {
+                    "type": "integer",
+                    "minimum": 30,
+                    "maximum": 3600
+                  },
+                  "sendDailyLimit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500
+                  },
+                  "sendHourlyLimit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "validationRevalidateDays": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 365
+                  },
+                  "validationBatchSize": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  },
+                  "validationMinIntervalMs": {
+                    "type": "integer",
+                    "minimum": 1000,
+                    "maximum": 60000
+                  },
+                  "scanDefaultDepth": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "scanUnitMaxSeconds": {
+                    "type": "integer",
+                    "minimum": 180,
+                    "maximum": 3600
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "senderName",
+                    "companyName",
+                    "introduction",
+                    "defaultTimezone",
+                    "defaultCountry",
+                    "sendMinIntervalSeconds",
+                    "sendDailyLimit",
+                    "sendHourlyLimit",
+                    "validationRevalidateDays",
+                    "validationBatchSize",
+                    "validationMinIntervalMs",
+                    "scanDefaultDepth",
+                    "scanUnitMaxSeconds",
+                    "missingForOutreach",
+                    "sendingEnabled",
+                    "sendAllowlistActive",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "senderName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "companyName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "introduction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "defaultTimezone": {
+                      "type": "string"
+                    },
+                    "defaultCountry": {
+                      "type": "string"
+                    },
+                    "sendMinIntervalSeconds": {
+                      "type": "integer"
+                    },
+                    "sendDailyLimit": {
+                      "type": "integer"
+                    },
+                    "sendHourlyLimit": {
+                      "type": "integer"
+                    },
+                    "validationRevalidateDays": {
+                      "type": "integer"
+                    },
+                    "validationBatchSize": {
+                      "type": "integer"
+                    },
+                    "validationMinIntervalMs": {
+                      "type": "integer"
+                    },
+                    "scanDefaultDepth": {
+                      "type": "integer"
+                    },
+                    "scanUnitMaxSeconds": {
+                      "type": "integer"
+                    },
+                    "missingForOutreach": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "sendingEnabled": {
+                      "type": "boolean",
+                      "description": "Interruptor global SENDING_ENABLED (ambiente)"
+                    },
+                    "sendAllowlistActive": {
+                      "type": "boolean"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/offers/": {
+      "get": {
+        "tags": [
+          "offers"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "includeArchived",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "service",
+                      "name",
+                      "description",
+                      "scope",
+                      "priceType",
+                      "priceCents",
+                      "setupCents",
+                      "monthlyCents",
+                      "currency",
+                      "conditions",
+                      "validUntil",
+                      "id",
+                      "archived",
+                      "createdAt",
+                      "updatedAt"
+                    ],
+                    "properties": {
+                      "service": {
+                        "enum": [
+                          "landing_page",
+                          "micro_saas"
+                        ]
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 4000,
+                        "nullable": true
+                      },
+                      "scope": {
+                        "type": "string",
+                        "maxLength": 4000,
+                        "nullable": true
+                      },
+                      "priceType": {
+                        "enum": [
+                          "fixed",
+                          "starting_at",
+                          "custom_quote"
+                        ]
+                      },
+                      "priceCents": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9000000000000,
+                        "description": "Valor em centavos",
+                        "nullable": true
+                      },
+                      "setupCents": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9000000000000,
+                        "description": "Valor em centavos",
+                        "nullable": true
+                      },
+                      "monthlyCents": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9000000000000,
+                        "description": "Valor em centavos",
+                        "nullable": true
+                      },
+                      "currency": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      },
+                      "conditions": {
+                        "type": "string",
+                        "maxLength": 4000,
+                        "nullable": true
+                      },
+                      "validUntil": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                      },
+                      "id": {
+                        "type": "integer"
+                      },
+                      "archived": {
+                        "type": "boolean"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "updatedAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "offers"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "service",
+                  "name",
+                  "description",
+                  "scope",
+                  "priceType",
+                  "priceCents",
+                  "setupCents",
+                  "monthlyCents",
+                  "currency",
+                  "conditions",
+                  "validUntil"
+                ],
+                "properties": {
+                  "service": {
+                    "enum": [
+                      "landing_page",
+                      "micro_saas"
+                    ]
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "nullable": true
+                  },
+                  "scope": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "nullable": true
+                  },
+                  "priceType": {
+                    "enum": [
+                      "fixed",
+                      "starting_at",
+                      "custom_quote"
+                    ]
+                  },
+                  "priceCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9000000000000,
+                    "description": "Valor em centavos",
+                    "nullable": true
+                  },
+                  "setupCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9000000000000,
+                    "description": "Valor em centavos",
+                    "nullable": true
+                  },
+                  "monthlyCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9000000000000,
+                    "description": "Valor em centavos",
+                    "nullable": true
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "conditions": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "nullable": true
+                  },
+                  "validUntil": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "name",
+                    "description",
+                    "scope",
+                    "priceType",
+                    "priceCents",
+                    "setupCents",
+                    "monthlyCents",
+                    "currency",
+                    "conditions",
+                    "validUntil",
+                    "id",
+                    "archived",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "service": {
+                      "enum": [
+                        "landing_page",
+                        "micro_saas"
+                      ]
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 4000,
+                      "nullable": true
+                    },
+                    "scope": {
+                      "type": "string",
+                      "maxLength": 4000,
+                      "nullable": true
+                    },
+                    "priceType": {
+                      "enum": [
+                        "fixed",
+                        "starting_at",
+                        "custom_quote"
+                      ]
+                    },
+                    "priceCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9000000000000,
+                      "description": "Valor em centavos",
+                      "nullable": true
+                    },
+                    "setupCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9000000000000,
+                      "description": "Valor em centavos",
+                      "nullable": true
+                    },
+                    "monthlyCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9000000000000,
+                      "description": "Valor em centavos",
+                      "nullable": true
+                    },
+                    "currency": {
+                      "type": "string",
+                      "pattern": "^[A-Z]{3}$"
+                    },
+                    "conditions": {
+                      "type": "string",
+                      "maxLength": 4000,
+                      "nullable": true
+                    },
+                    "validUntil": {
+                      "type": "string",
+                      "format": "date",
+                      "nullable": true
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "archived": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/offers/{id}": {
+      "get": {
+        "tags": [
+          "offers"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "name",
+                    "description",
+                    "scope",
+                    "priceType",
+                    "priceCents",
+                    "setupCents",
+                    "monthlyCents",
+                    "currency",
+                    "conditions",
+                    "validUntil",
+                    "id",
+                    "archived",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "service": {
+                      "enum": [
+                        "landing_page",
+                        "micro_saas"
+                      ]
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 4000,
+                      "nullable": true
+                    },
+                    "scope": {
+                      "type": "string",
+                      "maxLength": 4000,
+                      "nullable": true
+                    },
+                    "priceType": {
+                      "enum": [
+                        "fixed",
+                        "starting_at",
+                        "custom_quote"
+                      ]
+                    },
+                    "priceCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9000000000000,
+                      "description": "Valor em centavos",
+                      "nullable": true
+                    },
+                    "setupCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9000000000000,
+                      "description": "Valor em centavos",
+                      "nullable": true
+                    },
+                    "monthlyCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9000000000000,
+                      "description": "Valor em centavos",
+                      "nullable": true
+                    },
+                    "currency": {
+                      "type": "string",
+                      "pattern": "^[A-Z]{3}$"
+                    },
+                    "conditions": {
+                      "type": "string",
+                      "maxLength": 4000,
+                      "nullable": true
+                    },
+                    "validUntil": {
+                      "type": "string",
+                      "format": "date",
+                      "nullable": true
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "archived": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "offers"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "service",
+                  "name",
+                  "description",
+                  "scope",
+                  "priceType",
+                  "priceCents",
+                  "setupCents",
+                  "monthlyCents",
+                  "currency",
+                  "conditions",
+                  "validUntil"
+                ],
+                "properties": {
+                  "service": {
+                    "enum": [
+                      "landing_page",
+                      "micro_saas"
+                    ]
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "nullable": true
+                  },
+                  "scope": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "nullable": true
+                  },
+                  "priceType": {
+                    "enum": [
+                      "fixed",
+                      "starting_at",
+                      "custom_quote"
+                    ]
+                  },
+                  "priceCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9000000000000,
+                    "description": "Valor em centavos",
+                    "nullable": true
+                  },
+                  "setupCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9000000000000,
+                    "description": "Valor em centavos",
+                    "nullable": true
+                  },
+                  "monthlyCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9000000000000,
+                    "description": "Valor em centavos",
+                    "nullable": true
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "conditions": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "nullable": true
+                  },
+                  "validUntil": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "name",
+                    "description",
+                    "scope",
+                    "priceType",
+                    "priceCents",
+                    "setupCents",
+                    "monthlyCents",
+                    "currency",
+                    "conditions",
+                    "validUntil",
+                    "id",
+                    "archived",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "service": {
+                      "enum": [
+                        "landing_page",
+                        "micro_saas"
+                      ]
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 4000,
+                      "nullable": true
+                    },
+                    "scope": {
+                      "type": "string",
+                      "maxLength": 4000,
+                      "nullable": true
+                    },
+                    "priceType": {
+                      "enum": [
+                        "fixed",
+                        "starting_at",
+                        "custom_quote"
+                      ]
+                    },
+                    "priceCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9000000000000,
+                      "description": "Valor em centavos",
+                      "nullable": true
+                    },
+                    "setupCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9000000000000,
+                      "description": "Valor em centavos",
+                      "nullable": true
+                    },
+                    "monthlyCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9000000000000,
+                      "description": "Valor em centavos",
+                      "nullable": true
+                    },
+                    "currency": {
+                      "type": "string",
+                      "pattern": "^[A-Z]{3}$"
+                    },
+                    "conditions": {
+                      "type": "string",
+                      "maxLength": 4000,
+                      "nullable": true
+                    },
+                    "validUntil": {
+                      "type": "string",
+                      "format": "date",
+                      "nullable": true
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "archived": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/offers/{id}/archive": {
+      "post": {
+        "tags": [
+          "offers"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "name",
+                    "description",
+                    "scope",
+                    "priceType",
+                    "priceCents",
+                    "setupCents",
+                    "monthlyCents",
+                    "currency",
+                    "conditions",
+                    "validUntil",
+                    "id",
+                    "archived",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "service": {
+                      "enum": [
+                        "landing_page",
+                        "micro_saas"
+                      ]
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 4000,
+                      "nullable": true
+                    },
+                    "scope": {
+                      "type": "string",
+                      "maxLength": 4000,
+                      "nullable": true
+                    },
+                    "priceType": {
+                      "enum": [
+                        "fixed",
+                        "starting_at",
+                        "custom_quote"
+                      ]
+                    },
+                    "priceCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9000000000000,
+                      "description": "Valor em centavos",
+                      "nullable": true
+                    },
+                    "setupCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9000000000000,
+                      "description": "Valor em centavos",
+                      "nullable": true
+                    },
+                    "monthlyCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9000000000000,
+                      "description": "Valor em centavos",
+                      "nullable": true
+                    },
+                    "currency": {
+                      "type": "string",
+                      "pattern": "^[A-Z]{3}$"
+                    },
+                    "conditions": {
+                      "type": "string",
+                      "maxLength": 4000,
+                      "nullable": true
+                    },
+                    "validUntil": {
+                      "type": "string",
+                      "format": "date",
+                      "nullable": true
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "archived": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scans/": {
+      "get": {
+        "tags": [
+          "scans"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "in": "query",
+            "name": "page",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "in": "query",
+            "name": "pageSize",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "total",
+                    "page",
+                    "pageSize"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "segment",
+                          "category",
+                          "keywords",
+                          "neighborhood",
+                          "city",
+                          "state",
+                          "country",
+                          "countryCode",
+                          "regionLabel",
+                          "language",
+                          "mode",
+                          "targetKind",
+                          "targetCount",
+                          "targetProgress",
+                          "campaignId",
+                          "depth",
+                          "unitMaxSeconds",
+                          "maxUnits",
+                          "maxDurationMinutes",
+                          "status",
+                          "statusReason",
+                          "lastError",
+                          "placesFound",
+                          "phonesFound",
+                          "newRecords",
+                          "duplicates",
+                          "uniquePhones",
+                          "waConfirmed",
+                          "waInconclusive",
+                          "surplus",
+                          "startedAt",
+                          "finishedAt",
+                          "createdAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "segment": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "category": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "keywords": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "neighborhood": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "city": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "state": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "country": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "countryCode": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "regionLabel": {
+                            "type": "string"
+                          },
+                          "language": {
+                            "type": "string"
+                          },
+                          "mode": {
+                            "enum": [
+                              "collect_only",
+                              "collect_and_validate"
+                            ]
+                          },
+                          "targetKind": {
+                            "enum": [
+                              "unique_phones",
+                              "whatsapp_confirmed"
+                            ]
+                          },
+                          "targetCount": {
+                            "type": "integer"
+                          },
+                          "targetProgress": {
+                            "type": "integer"
+                          },
+                          "campaignId": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "depth": {
+                            "type": "integer"
+                          },
+                          "unitMaxSeconds": {
+                            "type": "integer"
+                          },
+                          "maxUnits": {
+                            "type": "integer"
+                          },
+                          "maxDurationMinutes": {
+                            "type": "integer"
+                          },
+                          "status": {
+                            "enum": [
+                              "draft",
+                              "queued",
+                              "running",
+                              "pausing",
+                              "paused",
+                              "cancelling",
+                              "cancelled",
+                              "completed",
+                              "partial",
+                              "failed"
+                            ]
+                          },
+                          "statusReason": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastError": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "placesFound": {
+                            "type": "integer"
+                          },
+                          "phonesFound": {
+                            "type": "integer"
+                          },
+                          "newRecords": {
+                            "type": "integer"
+                          },
+                          "duplicates": {
+                            "type": "integer"
+                          },
+                          "uniquePhones": {
+                            "type": "integer"
+                          },
+                          "waConfirmed": {
+                            "type": "integer"
+                          },
+                          "waInconclusive": {
+                            "type": "integer"
+                          },
+                          "surplus": {
+                            "type": "integer"
+                          },
+                          "startedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "finishedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "pageSize": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "scans"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "segment",
+                  "category",
+                  "keywords",
+                  "neighborhood",
+                  "city",
+                  "state",
+                  "country",
+                  "countryCode",
+                  "language",
+                  "mode",
+                  "targetKind",
+                  "targetCount",
+                  "campaignId",
+                  "maxUnits",
+                  "maxDurationMinutes"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "segment": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "nullable": true
+                  },
+                  "category": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "nullable": true
+                  },
+                  "keywords": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 120
+                    },
+                    "minItems": 1,
+                    "maxItems": 20
+                  },
+                  "neighborhood": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "nullable": true
+                  },
+                  "city": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "nullable": true
+                  },
+                  "state": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "nullable": true
+                  },
+                  "country": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "nullable": true
+                  },
+                  "countryCode": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}$",
+                    "description": "País usado para normalizar telefones",
+                    "nullable": true
+                  },
+                  "language": {
+                    "type": "string",
+                    "pattern": "^[a-z]{2}$",
+                    "description": "Idioma (2 letras) suportado pelo scraper"
+                  },
+                  "mode": {
+                    "enum": [
+                      "collect_only",
+                      "collect_and_validate"
+                    ]
+                  },
+                  "targetKind": {
+                    "enum": [
+                      "unique_phones",
+                      "whatsapp_confirmed"
+                    ]
+                  },
+                  "targetCount": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5000
+                  },
+                  "campaignId": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "nullable": true
+                  },
+                  "depth": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "unitMaxSeconds": {
+                    "type": "integer",
+                    "minimum": 180,
+                    "maximum": 3600
+                  },
+                  "maxUnits": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  },
+                  "maxDurationMinutes": {
+                    "type": "integer",
+                    "minimum": 5,
+                    "maximum": 1440
+                  },
+                  "startNow": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "segment",
+                    "category",
+                    "keywords",
+                    "neighborhood",
+                    "city",
+                    "state",
+                    "country",
+                    "countryCode",
+                    "regionLabel",
+                    "language",
+                    "mode",
+                    "targetKind",
+                    "targetCount",
+                    "targetProgress",
+                    "campaignId",
+                    "depth",
+                    "unitMaxSeconds",
+                    "maxUnits",
+                    "maxDurationMinutes",
+                    "status",
+                    "statusReason",
+                    "lastError",
+                    "placesFound",
+                    "phonesFound",
+                    "newRecords",
+                    "duplicates",
+                    "uniquePhones",
+                    "waConfirmed",
+                    "waInconclusive",
+                    "surplus",
+                    "startedAt",
+                    "finishedAt",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "segment": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "category": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "keywords": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "neighborhood": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "city": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "state": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "country": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "countryCode": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "regionLabel": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "enum": [
+                        "collect_only",
+                        "collect_and_validate"
+                      ]
+                    },
+                    "targetKind": {
+                      "enum": [
+                        "unique_phones",
+                        "whatsapp_confirmed"
+                      ]
+                    },
+                    "targetCount": {
+                      "type": "integer"
+                    },
+                    "targetProgress": {
+                      "type": "integer"
+                    },
+                    "campaignId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "depth": {
+                      "type": "integer"
+                    },
+                    "unitMaxSeconds": {
+                      "type": "integer"
+                    },
+                    "maxUnits": {
+                      "type": "integer"
+                    },
+                    "maxDurationMinutes": {
+                      "type": "integer"
+                    },
+                    "status": {
+                      "enum": [
+                        "draft",
+                        "queued",
+                        "running",
+                        "pausing",
+                        "paused",
+                        "cancelling",
+                        "cancelled",
+                        "completed",
+                        "partial",
+                        "failed"
+                      ]
+                    },
+                    "statusReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "lastError": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "placesFound": {
+                      "type": "integer"
+                    },
+                    "phonesFound": {
+                      "type": "integer"
+                    },
+                    "newRecords": {
+                      "type": "integer"
+                    },
+                    "duplicates": {
+                      "type": "integer"
+                    },
+                    "uniquePhones": {
+                      "type": "integer"
+                    },
+                    "waConfirmed": {
+                      "type": "integer"
+                    },
+                    "waInconclusive": {
+                      "type": "integer"
+                    },
+                    "surplus": {
+                      "type": "integer"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "finishedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scans/{id}": {
+      "get": {
+        "tags": [
+          "scans"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "scan",
+                    "units"
+                  ],
+                  "properties": {
+                    "scan": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "name",
+                        "segment",
+                        "category",
+                        "keywords",
+                        "neighborhood",
+                        "city",
+                        "state",
+                        "country",
+                        "countryCode",
+                        "regionLabel",
+                        "language",
+                        "mode",
+                        "targetKind",
+                        "targetCount",
+                        "targetProgress",
+                        "campaignId",
+                        "depth",
+                        "unitMaxSeconds",
+                        "maxUnits",
+                        "maxDurationMinutes",
+                        "status",
+                        "statusReason",
+                        "lastError",
+                        "placesFound",
+                        "phonesFound",
+                        "newRecords",
+                        "duplicates",
+                        "uniquePhones",
+                        "waConfirmed",
+                        "waInconclusive",
+                        "surplus",
+                        "startedAt",
+                        "finishedAt",
+                        "createdAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "segment": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "category": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "keywords": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "neighborhood": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "city": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "state": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "country": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "countryCode": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "regionLabel": {
+                          "type": "string"
+                        },
+                        "language": {
+                          "type": "string"
+                        },
+                        "mode": {
+                          "enum": [
+                            "collect_only",
+                            "collect_and_validate"
+                          ]
+                        },
+                        "targetKind": {
+                          "enum": [
+                            "unique_phones",
+                            "whatsapp_confirmed"
+                          ]
+                        },
+                        "targetCount": {
+                          "type": "integer"
+                        },
+                        "targetProgress": {
+                          "type": "integer"
+                        },
+                        "campaignId": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "depth": {
+                          "type": "integer"
+                        },
+                        "unitMaxSeconds": {
+                          "type": "integer"
+                        },
+                        "maxUnits": {
+                          "type": "integer"
+                        },
+                        "maxDurationMinutes": {
+                          "type": "integer"
+                        },
+                        "status": {
+                          "enum": [
+                            "draft",
+                            "queued",
+                            "running",
+                            "pausing",
+                            "paused",
+                            "cancelling",
+                            "cancelled",
+                            "completed",
+                            "partial",
+                            "failed"
+                          ]
+                        },
+                        "statusReason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "lastError": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "placesFound": {
+                          "type": "integer"
+                        },
+                        "phonesFound": {
+                          "type": "integer"
+                        },
+                        "newRecords": {
+                          "type": "integer"
+                        },
+                        "duplicates": {
+                          "type": "integer"
+                        },
+                        "uniquePhones": {
+                          "type": "integer"
+                        },
+                        "waConfirmed": {
+                          "type": "integer"
+                        },
+                        "waInconclusive": {
+                          "type": "integer"
+                        },
+                        "surplus": {
+                          "type": "integer"
+                        },
+                        "startedAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "finishedAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "units": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "seq",
+                          "query",
+                          "depth",
+                          "status",
+                          "attempts",
+                          "placesFound",
+                          "newRecords",
+                          "duplicates",
+                          "error",
+                          "submittedAt",
+                          "finishedAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "seq": {
+                            "type": "integer"
+                          },
+                          "query": {
+                            "type": "string"
+                          },
+                          "depth": {
+                            "type": "integer"
+                          },
+                          "status": {
+                            "enum": [
+                              "pending",
+                              "submitted",
+                              "running",
+                              "importing",
+                              "done",
+                              "failed",
+                              "skipped",
+                              "abandoned"
+                            ]
+                          },
+                          "attempts": {
+                            "type": "integer"
+                          },
+                          "placesFound": {
+                            "type": "integer"
+                          },
+                          "newRecords": {
+                            "type": "integer"
+                          },
+                          "duplicates": {
+                            "type": "integer"
+                          },
+                          "error": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "submittedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "finishedAt": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scans/{id}/start": {
+      "post": {
+        "tags": [
+          "scans"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "segment",
+                    "category",
+                    "keywords",
+                    "neighborhood",
+                    "city",
+                    "state",
+                    "country",
+                    "countryCode",
+                    "regionLabel",
+                    "language",
+                    "mode",
+                    "targetKind",
+                    "targetCount",
+                    "targetProgress",
+                    "campaignId",
+                    "depth",
+                    "unitMaxSeconds",
+                    "maxUnits",
+                    "maxDurationMinutes",
+                    "status",
+                    "statusReason",
+                    "lastError",
+                    "placesFound",
+                    "phonesFound",
+                    "newRecords",
+                    "duplicates",
+                    "uniquePhones",
+                    "waConfirmed",
+                    "waInconclusive",
+                    "surplus",
+                    "startedAt",
+                    "finishedAt",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "segment": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "category": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "keywords": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "neighborhood": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "city": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "state": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "country": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "countryCode": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "regionLabel": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "enum": [
+                        "collect_only",
+                        "collect_and_validate"
+                      ]
+                    },
+                    "targetKind": {
+                      "enum": [
+                        "unique_phones",
+                        "whatsapp_confirmed"
+                      ]
+                    },
+                    "targetCount": {
+                      "type": "integer"
+                    },
+                    "targetProgress": {
+                      "type": "integer"
+                    },
+                    "campaignId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "depth": {
+                      "type": "integer"
+                    },
+                    "unitMaxSeconds": {
+                      "type": "integer"
+                    },
+                    "maxUnits": {
+                      "type": "integer"
+                    },
+                    "maxDurationMinutes": {
+                      "type": "integer"
+                    },
+                    "status": {
+                      "enum": [
+                        "draft",
+                        "queued",
+                        "running",
+                        "pausing",
+                        "paused",
+                        "cancelling",
+                        "cancelled",
+                        "completed",
+                        "partial",
+                        "failed"
+                      ]
+                    },
+                    "statusReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "lastError": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "placesFound": {
+                      "type": "integer"
+                    },
+                    "phonesFound": {
+                      "type": "integer"
+                    },
+                    "newRecords": {
+                      "type": "integer"
+                    },
+                    "duplicates": {
+                      "type": "integer"
+                    },
+                    "uniquePhones": {
+                      "type": "integer"
+                    },
+                    "waConfirmed": {
+                      "type": "integer"
+                    },
+                    "waInconclusive": {
+                      "type": "integer"
+                    },
+                    "surplus": {
+                      "type": "integer"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "finishedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scans/{id}/pause": {
+      "post": {
+        "tags": [
+          "scans"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "segment",
+                    "category",
+                    "keywords",
+                    "neighborhood",
+                    "city",
+                    "state",
+                    "country",
+                    "countryCode",
+                    "regionLabel",
+                    "language",
+                    "mode",
+                    "targetKind",
+                    "targetCount",
+                    "targetProgress",
+                    "campaignId",
+                    "depth",
+                    "unitMaxSeconds",
+                    "maxUnits",
+                    "maxDurationMinutes",
+                    "status",
+                    "statusReason",
+                    "lastError",
+                    "placesFound",
+                    "phonesFound",
+                    "newRecords",
+                    "duplicates",
+                    "uniquePhones",
+                    "waConfirmed",
+                    "waInconclusive",
+                    "surplus",
+                    "startedAt",
+                    "finishedAt",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "segment": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "category": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "keywords": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "neighborhood": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "city": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "state": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "country": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "countryCode": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "regionLabel": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "enum": [
+                        "collect_only",
+                        "collect_and_validate"
+                      ]
+                    },
+                    "targetKind": {
+                      "enum": [
+                        "unique_phones",
+                        "whatsapp_confirmed"
+                      ]
+                    },
+                    "targetCount": {
+                      "type": "integer"
+                    },
+                    "targetProgress": {
+                      "type": "integer"
+                    },
+                    "campaignId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "depth": {
+                      "type": "integer"
+                    },
+                    "unitMaxSeconds": {
+                      "type": "integer"
+                    },
+                    "maxUnits": {
+                      "type": "integer"
+                    },
+                    "maxDurationMinutes": {
+                      "type": "integer"
+                    },
+                    "status": {
+                      "enum": [
+                        "draft",
+                        "queued",
+                        "running",
+                        "pausing",
+                        "paused",
+                        "cancelling",
+                        "cancelled",
+                        "completed",
+                        "partial",
+                        "failed"
+                      ]
+                    },
+                    "statusReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "lastError": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "placesFound": {
+                      "type": "integer"
+                    },
+                    "phonesFound": {
+                      "type": "integer"
+                    },
+                    "newRecords": {
+                      "type": "integer"
+                    },
+                    "duplicates": {
+                      "type": "integer"
+                    },
+                    "uniquePhones": {
+                      "type": "integer"
+                    },
+                    "waConfirmed": {
+                      "type": "integer"
+                    },
+                    "waInconclusive": {
+                      "type": "integer"
+                    },
+                    "surplus": {
+                      "type": "integer"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "finishedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scans/{id}/resume": {
+      "post": {
+        "tags": [
+          "scans"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "segment",
+                    "category",
+                    "keywords",
+                    "neighborhood",
+                    "city",
+                    "state",
+                    "country",
+                    "countryCode",
+                    "regionLabel",
+                    "language",
+                    "mode",
+                    "targetKind",
+                    "targetCount",
+                    "targetProgress",
+                    "campaignId",
+                    "depth",
+                    "unitMaxSeconds",
+                    "maxUnits",
+                    "maxDurationMinutes",
+                    "status",
+                    "statusReason",
+                    "lastError",
+                    "placesFound",
+                    "phonesFound",
+                    "newRecords",
+                    "duplicates",
+                    "uniquePhones",
+                    "waConfirmed",
+                    "waInconclusive",
+                    "surplus",
+                    "startedAt",
+                    "finishedAt",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "segment": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "category": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "keywords": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "neighborhood": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "city": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "state": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "country": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "countryCode": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "regionLabel": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "enum": [
+                        "collect_only",
+                        "collect_and_validate"
+                      ]
+                    },
+                    "targetKind": {
+                      "enum": [
+                        "unique_phones",
+                        "whatsapp_confirmed"
+                      ]
+                    },
+                    "targetCount": {
+                      "type": "integer"
+                    },
+                    "targetProgress": {
+                      "type": "integer"
+                    },
+                    "campaignId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "depth": {
+                      "type": "integer"
+                    },
+                    "unitMaxSeconds": {
+                      "type": "integer"
+                    },
+                    "maxUnits": {
+                      "type": "integer"
+                    },
+                    "maxDurationMinutes": {
+                      "type": "integer"
+                    },
+                    "status": {
+                      "enum": [
+                        "draft",
+                        "queued",
+                        "running",
+                        "pausing",
+                        "paused",
+                        "cancelling",
+                        "cancelled",
+                        "completed",
+                        "partial",
+                        "failed"
+                      ]
+                    },
+                    "statusReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "lastError": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "placesFound": {
+                      "type": "integer"
+                    },
+                    "phonesFound": {
+                      "type": "integer"
+                    },
+                    "newRecords": {
+                      "type": "integer"
+                    },
+                    "duplicates": {
+                      "type": "integer"
+                    },
+                    "uniquePhones": {
+                      "type": "integer"
+                    },
+                    "waConfirmed": {
+                      "type": "integer"
+                    },
+                    "waInconclusive": {
+                      "type": "integer"
+                    },
+                    "surplus": {
+                      "type": "integer"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "finishedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scans/{id}/cancel": {
+      "post": {
+        "tags": [
+          "scans"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "segment",
+                    "category",
+                    "keywords",
+                    "neighborhood",
+                    "city",
+                    "state",
+                    "country",
+                    "countryCode",
+                    "regionLabel",
+                    "language",
+                    "mode",
+                    "targetKind",
+                    "targetCount",
+                    "targetProgress",
+                    "campaignId",
+                    "depth",
+                    "unitMaxSeconds",
+                    "maxUnits",
+                    "maxDurationMinutes",
+                    "status",
+                    "statusReason",
+                    "lastError",
+                    "placesFound",
+                    "phonesFound",
+                    "newRecords",
+                    "duplicates",
+                    "uniquePhones",
+                    "waConfirmed",
+                    "waInconclusive",
+                    "surplus",
+                    "startedAt",
+                    "finishedAt",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "segment": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "category": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "keywords": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "neighborhood": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "city": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "state": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "country": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "countryCode": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "regionLabel": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "enum": [
+                        "collect_only",
+                        "collect_and_validate"
+                      ]
+                    },
+                    "targetKind": {
+                      "enum": [
+                        "unique_phones",
+                        "whatsapp_confirmed"
+                      ]
+                    },
+                    "targetCount": {
+                      "type": "integer"
+                    },
+                    "targetProgress": {
+                      "type": "integer"
+                    },
+                    "campaignId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "depth": {
+                      "type": "integer"
+                    },
+                    "unitMaxSeconds": {
+                      "type": "integer"
+                    },
+                    "maxUnits": {
+                      "type": "integer"
+                    },
+                    "maxDurationMinutes": {
+                      "type": "integer"
+                    },
+                    "status": {
+                      "enum": [
+                        "draft",
+                        "queued",
+                        "running",
+                        "pausing",
+                        "paused",
+                        "cancelling",
+                        "cancelled",
+                        "completed",
+                        "partial",
+                        "failed"
+                      ]
+                    },
+                    "statusReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "lastError": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "placesFound": {
+                      "type": "integer"
+                    },
+                    "phonesFound": {
+                      "type": "integer"
+                    },
+                    "newRecords": {
+                      "type": "integer"
+                    },
+                    "duplicates": {
+                      "type": "integer"
+                    },
+                    "uniquePhones": {
+                      "type": "integer"
+                    },
+                    "waConfirmed": {
+                      "type": "integer"
+                    },
+                    "waInconclusive": {
+                      "type": "integer"
+                    },
+                    "surplus": {
+                      "type": "integer"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "finishedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scans/{id}/recount": {
+      "post": {
+        "tags": [
+          "scans"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "segment",
+                    "category",
+                    "keywords",
+                    "neighborhood",
+                    "city",
+                    "state",
+                    "country",
+                    "countryCode",
+                    "regionLabel",
+                    "language",
+                    "mode",
+                    "targetKind",
+                    "targetCount",
+                    "targetProgress",
+                    "campaignId",
+                    "depth",
+                    "unitMaxSeconds",
+                    "maxUnits",
+                    "maxDurationMinutes",
+                    "status",
+                    "statusReason",
+                    "lastError",
+                    "placesFound",
+                    "phonesFound",
+                    "newRecords",
+                    "duplicates",
+                    "uniquePhones",
+                    "waConfirmed",
+                    "waInconclusive",
+                    "surplus",
+                    "startedAt",
+                    "finishedAt",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "segment": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "category": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "keywords": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "neighborhood": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "city": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "state": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "country": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "countryCode": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "regionLabel": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "enum": [
+                        "collect_only",
+                        "collect_and_validate"
+                      ]
+                    },
+                    "targetKind": {
+                      "enum": [
+                        "unique_phones",
+                        "whatsapp_confirmed"
+                      ]
+                    },
+                    "targetCount": {
+                      "type": "integer"
+                    },
+                    "targetProgress": {
+                      "type": "integer"
+                    },
+                    "campaignId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "depth": {
+                      "type": "integer"
+                    },
+                    "unitMaxSeconds": {
+                      "type": "integer"
+                    },
+                    "maxUnits": {
+                      "type": "integer"
+                    },
+                    "maxDurationMinutes": {
+                      "type": "integer"
+                    },
+                    "status": {
+                      "enum": [
+                        "draft",
+                        "queued",
+                        "running",
+                        "pausing",
+                        "paused",
+                        "cancelling",
+                        "cancelled",
+                        "completed",
+                        "partial",
+                        "failed"
+                      ]
+                    },
+                    "statusReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "lastError": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "placesFound": {
+                      "type": "integer"
+                    },
+                    "phonesFound": {
+                      "type": "integer"
+                    },
+                    "newRecords": {
+                      "type": "integer"
+                    },
+                    "duplicates": {
+                      "type": "integer"
+                    },
+                    "uniquePhones": {
+                      "type": "integer"
+                    },
+                    "waConfirmed": {
+                      "type": "integer"
+                    },
+                    "waInconclusive": {
+                      "type": "integer"
+                    },
+                    "surplus": {
+                      "type": "integer"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "finishedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/leads/": {
+      "get": {
+        "tags": [
+          "leads"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "in": "query",
+            "name": "q",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "query",
+            "name": "scanId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "query",
+            "name": "campaignId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 191
+            },
+            "in": "query",
+            "name": "category",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            },
+            "in": "query",
+            "name": "city",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "pending",
+                "invalid_format",
+                "found",
+                "not_found",
+                "inconclusive"
+              ]
+            },
+            "in": "query",
+            "name": "waStatus",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "valid",
+                "needs_review",
+                "invalid"
+              ]
+            },
+            "in": "query",
+            "name": "formatStatus",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "hasCoords",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "suppressed",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "includeDemo",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "in": "query",
+            "name": "page",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "in": "query",
+            "name": "pageSize",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "recent",
+                "name"
+              ]
+            },
+            "in": "query",
+            "name": "sort",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "total",
+                    "page",
+                    "pageSize"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "category",
+                          "city",
+                          "state",
+                          "countryCode",
+                          "hasCoords",
+                          "latitude",
+                          "longitude",
+                          "isDemo",
+                          "phoneId",
+                          "phoneE164",
+                          "phoneRaw",
+                          "formatStatus",
+                          "waStatus",
+                          "waCheckedAt",
+                          "phoneCount",
+                          "sharedPhone",
+                          "suppressed",
+                          "activeParticipations",
+                          "opportunityStage",
+                          "lastSeenAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "city": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "state": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "countryCode": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "hasCoords": {
+                            "type": "boolean"
+                          },
+                          "latitude": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "longitude": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "isDemo": {
+                            "type": "boolean"
+                          },
+                          "phoneId": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "phoneE164": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "phoneRaw": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "formatStatus": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "waStatus": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "waCheckedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "phoneCount": {
+                            "type": "integer"
+                          },
+                          "sharedPhone": {
+                            "type": "boolean",
+                            "description": "Telefone também associado a outra empresa"
+                          },
+                          "suppressed": {
+                            "type": "boolean"
+                          },
+                          "activeParticipations": {
+                            "type": "integer"
+                          },
+                          "opportunityStage": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastSeenAt": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "pageSize": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/leads/export.csv": {
+      "get": {
+        "tags": [
+          "leads"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "in": "query",
+            "name": "q",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "query",
+            "name": "scanId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "query",
+            "name": "campaignId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 191
+            },
+            "in": "query",
+            "name": "category",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            },
+            "in": "query",
+            "name": "city",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "pending",
+                "invalid_format",
+                "found",
+                "not_found",
+                "inconclusive"
+              ]
+            },
+            "in": "query",
+            "name": "waStatus",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "valid",
+                "needs_review",
+                "invalid"
+              ]
+            },
+            "in": "query",
+            "name": "formatStatus",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "hasCoords",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "suppressed",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "includeDemo",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/leads/facets": {
+      "get": {
+        "tags": [
+          "leads"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "categories",
+                    "cities"
+                  ],
+                  "properties": {
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "cities": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/leads/map": {
+      "get": {
+        "tags": [
+          "leads"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "in": "query",
+            "name": "q",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "query",
+            "name": "scanId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "query",
+            "name": "campaignId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 191
+            },
+            "in": "query",
+            "name": "category",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            },
+            "in": "query",
+            "name": "city",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "pending",
+                "invalid_format",
+                "found",
+                "not_found",
+                "inconclusive"
+              ]
+            },
+            "in": "query",
+            "name": "waStatus",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "valid",
+                "needs_review",
+                "invalid"
+              ]
+            },
+            "in": "query",
+            "name": "formatStatus",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "hasCoords",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "suppressed",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "includeDemo",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "in": "query",
+            "name": "west",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "in": "query",
+            "name": "south",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "in": "query",
+            "name": "east",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "in": "query",
+            "name": "north",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 24
+            },
+            "in": "query",
+            "name": "zoom",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "mode",
+                    "total",
+                    "withoutCoords",
+                    "points",
+                    "cells"
+                  ],
+                  "properties": {
+                    "mode": {
+                      "enum": [
+                        "points",
+                        "grid"
+                      ]
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "withoutCoords": {
+                      "type": "integer"
+                    },
+                    "points": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "lat",
+                          "lng",
+                          "name",
+                          "waStatus",
+                          "stage"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "lat": {
+                            "type": "number"
+                          },
+                          "lng": {
+                            "type": "number"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "waStatus": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "stage": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    },
+                    "cells": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "lat",
+                          "lng",
+                          "count"
+                        ],
+                        "properties": {
+                          "lat": {
+                            "type": "number"
+                          },
+                          "lng": {
+                            "type": "number"
+                          },
+                          "count": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/leads/{id}": {
+      "get": {
+        "tags": [
+          "leads"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "leads"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "notes"
+                ],
+                "properties": {
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 10000,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/leads/phones/{id}/suppress": {
+      "post": {
+        "tags": [
+          "leads"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason",
+                  "detail"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 64
+                  },
+                  "detail": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/leads/phones/{id}/unsuppress": {
+      "post": {
+        "tags": [
+          "leads"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 255
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/leads/validate": {
+      "post": {
+        "tags": [
+          "leads"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phoneIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "maxItems": 500
+                  },
+                  "scanId": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/whatsapp/session": {
+      "get": {
+        "tags": [
+          "whatsapp"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "sessionKey",
+                    "status",
+                    "ownJid",
+                    "webhookRegisteredAt",
+                    "lastError",
+                    "checkedAt"
+                  ],
+                  "properties": {
+                    "sessionKey": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": [
+                        "unknown",
+                        "not_created",
+                        "connecting",
+                        "scan_qr",
+                        "connected",
+                        "disconnected",
+                        "stopped",
+                        "logged_out",
+                        "gateway_unreachable"
+                      ]
+                    },
+                    "ownJid": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "webhookRegisteredAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "lastError": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "checkedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/whatsapp/session/provision": {
+      "post": {
+        "tags": [
+          "whatsapp"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "sessionKey",
+                    "status",
+                    "ownJid",
+                    "webhookRegisteredAt",
+                    "lastError",
+                    "checkedAt"
+                  ],
+                  "properties": {
+                    "sessionKey": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": [
+                        "unknown",
+                        "not_created",
+                        "connecting",
+                        "scan_qr",
+                        "connected",
+                        "disconnected",
+                        "stopped",
+                        "logged_out",
+                        "gateway_unreachable"
+                      ]
+                    },
+                    "ownJid": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "webhookRegisteredAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "lastError": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "checkedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/whatsapp/session/qr": {
+      "get": {
+        "tags": [
+          "whatsapp"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "image",
+                    "reason"
+                  ],
+                  "properties": {
+                    "image": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "reason": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/whatsapp/session/{action}": {
+      "post": {
+        "tags": [
+          "whatsapp"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "confirm": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "enum": [
+                "start",
+                "stop",
+                "restart",
+                "logout"
+              ]
+            },
+            "in": "path",
+            "name": "action",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "sessionKey",
+                    "status",
+                    "ownJid",
+                    "webhookRegisteredAt",
+                    "lastError",
+                    "checkedAt"
+                  ],
+                  "properties": {
+                    "sessionKey": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": [
+                        "unknown",
+                        "not_created",
+                        "connecting",
+                        "scan_qr",
+                        "connected",
+                        "disconnected",
+                        "stopped",
+                        "logged_out",
+                        "gateway_unreachable"
+                      ]
+                    },
+                    "ownJid": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "webhookRegisteredAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "lastError": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "checkedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/whatsapp/diagnostics": {
+      "get": {
+        "tags": [
+          "whatsapp"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/campaigns/": {
+      "get": {
+        "tags": [
+          "campaigns"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "objective",
+                      "offerId",
+                      "firstMessageTemplate",
+                      "presentationTemplate",
+                      "qualificationQuestions",
+                      "questionsPerMessage",
+                      "qualificationDoneTemplate",
+                      "declineAckTemplate",
+                      "timezone",
+                      "sendDays",
+                      "sendWindowStart",
+                      "sendWindowEnd",
+                      "dailyLimit",
+                      "noReplyCloseHours",
+                      "audienceFilters",
+                      "id",
+                      "service",
+                      "status",
+                      "isDemo",
+                      "startedAt",
+                      "pausedAt",
+                      "endedAt",
+                      "createdAt",
+                      "counts"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                      },
+                      "objective": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "nullable": true
+                      },
+                      "offerId": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "nullable": true
+                      },
+                      "firstMessageTemplate": {
+                        "type": "string",
+                        "maxLength": 4000,
+                        "nullable": true
+                      },
+                      "presentationTemplate": {
+                        "type": "string",
+                        "maxLength": 4000,
+                        "nullable": true
+                      },
+                      "qualificationQuestions": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "key",
+                            "text"
+                          ],
+                          "properties": {
+                            "key": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9_]{1,40}$"
+                            },
+                            "text": {
+                              "type": "string",
+                              "minLength": 3,
+                              "maxLength": 1000
+                            }
+                          }
+                        },
+                        "maxItems": 20
+                      },
+                      "questionsPerMessage": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 3
+                      },
+                      "qualificationDoneTemplate": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "nullable": true
+                      },
+                      "declineAckTemplate": {
+                        "type": "string",
+                        "maxLength": 1000,
+                        "nullable": true
+                      },
+                      "timezone": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "sendDays": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 6
+                        },
+                        "minItems": 1,
+                        "maxItems": 7
+                      },
+                      "sendWindowStart": {
+                        "type": "string",
+                        "pattern": "^\\d{2}:\\d{2}$"
+                      },
+                      "sendWindowEnd": {
+                        "type": "string",
+                        "pattern": "^\\d{2}:\\d{2}$"
+                      },
+                      "dailyLimit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 500
+                      },
+                      "noReplyCloseHours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      "audienceFilters": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "nullable": true
+                      },
+                      "id": {
+                        "type": "integer"
+                      },
+                      "service": {
+                        "enum": [
+                          "landing_page",
+                          "micro_saas"
+                        ]
+                      },
+                      "status": {
+                        "enum": [
+                          "draft",
+                          "active",
+                          "paused",
+                          "completed",
+                          "cancelled"
+                        ]
+                      },
+                      "isDemo": {
+                        "type": "boolean"
+                      },
+                      "startedAt": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "pausedAt": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "endedAt": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "counts": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "campaigns"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "service",
+                  "offerId"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "service": {
+                    "enum": [
+                      "landing_page",
+                      "micro_saas"
+                    ]
+                  },
+                  "offerId": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/campaigns/{id}": {
+      "get": {
+        "tags": [
+          "campaigns"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "campaigns"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "objective",
+                  "offerId",
+                  "firstMessageTemplate",
+                  "presentationTemplate",
+                  "qualificationQuestions",
+                  "questionsPerMessage",
+                  "qualificationDoneTemplate",
+                  "declineAckTemplate",
+                  "timezone",
+                  "sendDays",
+                  "sendWindowStart",
+                  "sendWindowEnd",
+                  "dailyLimit",
+                  "noReplyCloseHours",
+                  "audienceFilters"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "objective": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "nullable": true
+                  },
+                  "offerId": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "nullable": true
+                  },
+                  "firstMessageTemplate": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "nullable": true
+                  },
+                  "presentationTemplate": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "nullable": true
+                  },
+                  "qualificationQuestions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "key",
+                        "text"
+                      ],
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9_]{1,40}$"
+                        },
+                        "text": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 1000
+                        }
+                      }
+                    },
+                    "maxItems": 20
+                  },
+                  "questionsPerMessage": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 3
+                  },
+                  "qualificationDoneTemplate": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "nullable": true
+                  },
+                  "declineAckTemplate": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "nullable": true
+                  },
+                  "timezone": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "sendDays": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 6
+                    },
+                    "minItems": 1,
+                    "maxItems": 7
+                  },
+                  "sendWindowStart": {
+                    "type": "string",
+                    "pattern": "^\\d{2}:\\d{2}$"
+                  },
+                  "sendWindowEnd": {
+                    "type": "string",
+                    "pattern": "^\\d{2}:\\d{2}$"
+                  },
+                  "dailyLimit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500
+                  },
+                  "noReplyCloseHours": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "audienceFilters": {
+                    "type": "object",
+                    "additionalProperties": {},
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/campaigns/{id}/status": {
+      "post": {
+        "tags": [
+          "campaigns"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "to"
+                ],
+                "properties": {
+                  "to": {
+                    "enum": [
+                      "draft",
+                      "active",
+                      "paused",
+                      "completed",
+                      "cancelled"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/campaigns/{id}/preview": {
+      "post": {
+        "tags": [
+          "campaigns"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "template"
+                ],
+                "properties": {
+                  "template": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "companyId": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "text",
+                    "missing",
+                    "unknown",
+                    "companyName"
+                  ],
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "missing": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "unknown": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "companyName": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/campaigns/{id}/contacts": {
+      "get": {
+        "tags": [
+          "campaigns"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "in": "query",
+            "name": "page",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "in": "query",
+            "name": "pageSize",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "selected",
+                "excluded",
+                "blocked",
+                "scheduled",
+                "sent",
+                "awaiting_reply",
+                "replied",
+                "qualifying",
+                "qualified",
+                "handed_off",
+                "declined",
+                "closed_no_reply",
+                "cancelled"
+              ]
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "campaigns"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "companyIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "maxItems": 5000
+                  },
+                  "filters": {
+                    "type": "object",
+                    "properties": {
+                      "q": {
+                        "type": "string"
+                      },
+                      "scanId": {
+                        "type": "integer"
+                      },
+                      "category": {
+                        "type": "string"
+                      },
+                      "city": {
+                        "type": "string"
+                      },
+                      "waStatus": {
+                        "enum": [
+                          "pending",
+                          "invalid_format",
+                          "found",
+                          "not_found",
+                          "inconclusive"
+                        ]
+                      },
+                      "formatStatus": {
+                        "enum": [
+                          "valid",
+                          "needs_review",
+                          "invalid"
+                        ]
+                      },
+                      "suppressed": {
+                        "type": "boolean"
+                      },
+                      "includeDemo": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/campaigns/{id}/eligibility": {
+      "get": {
+        "tags": [
+          "campaigns"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/campaigns/{id}/contacts/remove": {
+      "post": {
+        "tags": [
+          "campaigns"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "minItems": 1,
+                    "maxItems": 1000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/campaigns/{id}/pending": {
+      "get": {
+        "tags": [
+          "campaigns"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/campaigns/{id}/pending/apply-template": {
+      "post": {
+        "tags": [
+          "campaigns"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "messageIds"
+                ],
+                "properties": {
+                  "messageIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "minItems": 1,
+                    "maxItems": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/inbox/conversations": {
+      "get": {
+        "tags": [
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "in": "query",
+            "name": "page",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "in": "query",
+            "name": "pageSize",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "awaiting_reply",
+                "awaiting_human",
+                "human",
+                "closed"
+              ]
+            },
+            "in": "query",
+            "name": "state",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "unread",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "in": "query",
+            "name": "q",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "campaignId",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/inbox/conversations/{id}": {
+      "get": {
+        "tags": [
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "query",
+            "name": "before",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "inbox"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "awaiting_human",
+                      "closed",
+                      "awaiting_reply"
+                    ]
+                  },
+                  "nextAction": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "nullable": true
+                  },
+                  "nextActionDueAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 10000,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/inbox/conversations/{id}/read": {
+      "post": {
+        "tags": [
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/inbox/conversations/{id}/takeover": {
+      "post": {
+        "tags": [
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/inbox/conversations/{id}/resume-automation": {
+      "post": {
+        "tags": [
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/inbox/conversations/{id}/messages": {
+      "post": {
+        "tags": [
+          "inbox"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "text",
+                  "clientKey"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "clientKey": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9-]{8,64}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/inbox/conversations/{id}/attachments": {
+      "post": {
+        "tags": [
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/inbox/messages/{id}": {
+      "patch": {
+        "tags": [
+          "inbox"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "body"
+                ],
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/inbox/messages/{id}/cancel": {
+      "post": {
+        "tags": [
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/inbox/messages/{id}/resolve-unknown": {
+      "post": {
+        "tags": [
+          "inbox"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "as"
+                ],
+                "properties": {
+                  "as": {
+                    "enum": [
+                      "sent",
+                      "not_sent"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/inbox/messages/{id}/media": {
+      "get": {
+        "tags": [
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/opportunities/": {
+      "get": {
+        "tags": [
+          "opportunities"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "in": "query",
+            "name": "page",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "in": "query",
+            "name": "pageSize",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "presentation",
+                "qualification",
+                "proposal",
+                "negotiation",
+                "won",
+                "lost"
+              ]
+            },
+            "in": "query",
+            "name": "stage",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "landing_page",
+                "micro_saas"
+              ]
+            },
+            "in": "query",
+            "name": "service",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "campaignId",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "opportunities"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "companyId",
+                  "service",
+                  "title",
+                  "conversationId"
+                ],
+                "properties": {
+                  "companyId": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "service": {
+                    "enum": [
+                      "landing_page",
+                      "micro_saas"
+                    ]
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "stage": {
+                    "enum": [
+                      "presentation",
+                      "qualification",
+                      "proposal",
+                      "negotiation"
+                    ]
+                  },
+                  "conversationId": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/opportunities/proposals": {
+      "get": {
+        "tags": [
+          "opportunities"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "in": "query",
+            "name": "page",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "in": "query",
+            "name": "pageSize",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "draft",
+                "sent",
+                "accepted",
+                "rejected",
+                "expired",
+                "withdrawn"
+              ]
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/opportunities/{id}": {
+      "get": {
+        "tags": [
+          "opportunities"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "opportunities"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 10000,
+                    "nullable": true
+                  },
+                  "nextAction": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "nullable": true
+                  },
+                  "nextActionDueAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/opportunities/{id}/stage": {
+      "post": {
+        "tags": [
+          "opportunities"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "stage",
+                  "reason"
+                ],
+                "properties": {
+                  "stage": {
+                    "enum": [
+                      "presentation",
+                      "qualification",
+                      "proposal",
+                      "negotiation",
+                      "won",
+                      "lost"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/opportunities/{id}/proposals": {
+      "post": {
+        "tags": [
+          "opportunities"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "scope",
+                  "amountCents",
+                  "setupCents",
+                  "monthlyCents",
+                  "currency",
+                  "conditions",
+                  "validUntil",
+                  "origin"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "scope": {
+                    "type": "string",
+                    "maxLength": 10000,
+                    "nullable": true
+                  },
+                  "amountCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9000000000000,
+                    "description": "Valor em centavos"
+                  },
+                  "setupCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9000000000000,
+                    "description": "Valor em centavos",
+                    "nullable": true
+                  },
+                  "monthlyCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9000000000000,
+                    "description": "Valor em centavos",
+                    "nullable": true
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "conditions": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "nullable": true
+                  },
+                  "validUntil": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  },
+                  "origin": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/opportunities/proposals/{id}": {
+      "put": {
+        "tags": [
+          "opportunities"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "scope",
+                  "amountCents",
+                  "setupCents",
+                  "monthlyCents",
+                  "currency",
+                  "conditions",
+                  "validUntil",
+                  "origin"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "scope": {
+                    "type": "string",
+                    "maxLength": 10000,
+                    "nullable": true
+                  },
+                  "amountCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9000000000000,
+                    "description": "Valor em centavos"
+                  },
+                  "setupCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9000000000000,
+                    "description": "Valor em centavos",
+                    "nullable": true
+                  },
+                  "monthlyCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9000000000000,
+                    "description": "Valor em centavos",
+                    "nullable": true
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "conditions": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "nullable": true
+                  },
+                  "validUntil": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  },
+                  "origin": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/opportunities/proposals/{id}/status": {
+      "post": {
+        "tags": [
+          "opportunities"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status",
+                  "reason"
+                ],
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "draft",
+                      "sent",
+                      "accepted",
+                      "rejected",
+                      "expired",
+                      "withdrawn"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/opportunities/proposals/{id}/payments": {
+      "post": {
+        "tags": [
+          "opportunities"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "amountCents",
+                  "currency",
+                  "receivedAt",
+                  "method",
+                  "note"
+                ],
+                "properties": {
+                  "amountCents": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9000000000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "receivedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "method": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "nullable": true
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/opportunities/payments/{id}": {
+      "delete": {
+        "tags": [
+          "opportunities"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/metrics/overview": {
+      "get": {
+        "tags": [
+          "metrics"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "in": "query",
+            "name": "from",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "in": "query",
+            "name": "to",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "landing_page",
+                "micro_saas"
+              ]
+            },
+            "in": "query",
+            "name": "service",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "query",
+            "name": "campaignId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "query",
+            "name": "scanId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            },
+            "in": "query",
+            "name": "city",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "in": "query",
+            "name": "state",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "includeDemo",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/metrics/campaigns": {
+      "get": {
+        "tags": [
+          "metrics"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "in": "query",
+            "name": "from",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "in": "query",
+            "name": "to",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "landing_page",
+                "micro_saas"
+              ]
+            },
+            "in": "query",
+            "name": "service",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "query",
+            "name": "campaignId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "query",
+            "name": "scanId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            },
+            "in": "query",
+            "name": "city",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "in": "query",
+            "name": "state",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "includeDemo",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/metrics/attention": {
+      "get": {
+        "tags": [
+          "metrics"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ]
+}

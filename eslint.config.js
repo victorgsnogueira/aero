@@ -25,7 +25,12 @@ export default tseslint.config(
     plugins: { 'react-hooks': reactHooks, 'react-refresh': reactRefresh },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true, allowExportNames: ['useToast'] }],
     },
+  },
+  {
+    // Ponto de entrada: declara rotas e páginas lazy, não exporta componentes.
+    files: ['apps/web/src/main.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
   },
 );

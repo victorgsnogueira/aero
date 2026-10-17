@@ -14,7 +14,7 @@
     "openapi": "node --env-file-if-exists=../../.env src/scripts/export-openapi.ts",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "eslint src test",
-    "test": "node --env-file-if-exists=../../.env.test --test --test-concurrency=1 \"test/**/*.test.ts\""
+    "test": "node --env-file-if-exists=../../.env --test --test-concurrency=1 \"test/**/*.test.ts\""
   },
   "dependencies": {
     "@aero/shared": "*",

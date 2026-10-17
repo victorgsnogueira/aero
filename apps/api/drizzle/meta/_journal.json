@@ -8,6 +8,13 @@
       "when": 1792202940065,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1792206087724,
+      "tag": "0001_scan_query_company_ids",
+      "breakpoints": true
     }
   ]
 }

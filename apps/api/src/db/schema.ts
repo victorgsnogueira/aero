@@ -294,6 +294,8 @@ export const scanQueryLog = mysqlTable(
     depth: int('depth').notNull(),
     scanUnitId: ref('scan_unit_id').notNull(),
     placesFound: int('places_found').notNull().default(0),
+    /** Empresas encontradas pela consulta (permite reaproveitar sem nova coleta). */
+    companyIds: json('company_ids').$type<number[]>(),
     executedAt: createdAt(),
   },
   (t) => [index('scan_query_log_hash_idx').on(t.queryHash, t.executedAt)],

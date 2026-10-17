@@ -15,7 +15,7 @@ export function normalizeText(text: string): string {
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase()
-    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, ' ')
+    .replace(/\p{Extended_Pictographic}|\u{FE0F}/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -73,7 +73,7 @@ const AFFIRM_FILLER = new Set([
 ]);
 const NEGATION = new Set(['nao', 'n', 'nem', 'nunca', 'jamais', 'negativo']);
 const QUESTION_START = /^(quanto|qual|quais|como|quem|onde|quando|o que|por que|porque|pq|cade|voces|vcs|e o|e a|e quanto)\b/;
-const PRICE_WORDS = /\b(preco|valor|custa|custo|orcamento|quanto|desconto|parcela|parcelar|pagamento|negociar|caro)\b/;
+const PRICE_WORDS = /\b(preco|custa|custo|quanto|desconto|parcela|parcelar|negociar|caro)\b/;
 
 export interface Classification {
   kind: ReplyClass;

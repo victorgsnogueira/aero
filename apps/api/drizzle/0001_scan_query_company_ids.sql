@@ -1,0 +1,1 @@
+ALTER TABLE `scan_query_log` ADD `company_ids` json;

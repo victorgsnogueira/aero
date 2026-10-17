@@ -115,6 +115,31 @@ export const leadsRoutes: FastifyPluginAsyncTypebox = async (app) => {
     },
   );
 
+  /** Exportação CSV (mesmos filtros da lista). Contém dados pessoais: uso do proprietário. */
+  app.get('/export.csv', { schema: { tags: ['leads'], querystring: LeadFilterQuery } }, async (req, reply) => {
+    const where = leadWhere(req.query as LeadFilters);
+    const [rows] = await db.execute(sql`${LEAD_SELECT} WHERE ${where} ORDER BY c.id LIMIT 50000`);
+    const header = ['id', 'empresa', 'categoria', 'cidade', 'estado', 'pais', 'telefone_e164', 'telefone_original', 'formato', 'whatsapp', 'whatsapp_verificado_em', 'bloqueado', 'latitude', 'longitude'];
+    const esc = (v: unknown) => {
+      const s = v === null || v === undefined ? '' : String(v);
+      // Neutraliza fórmulas ao abrir em planilhas
+      const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+      return /[",\n;]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+    };
+    const lines = [header.join(',')];
+    for (const r of (rows as unknown as RawLead[]).map(mapLead)) {
+      lines.push(
+        [r.id, r.name, r.category, r.city, r.state, r.countryCode, r.phoneE164, r.phoneRaw, r.formatStatus, r.waStatus, r.waCheckedAt, r.suppressed ? 'sim' : 'nao', r.latitude, r.longitude].map(esc).join(','),
+      );
+    }
+    await audit(db, 'owner', 'leads.export', 'leads', null, { rows: lines.length - 1 });
+    return reply
+      .header('content-type', 'text/csv; charset=utf-8')
+      .header('content-disposition', `attachment; filename="aero-leads-${new Date().toISOString().slice(0, 10)}.csv"`)
+      .header('cache-control', 'no-store')
+      .send(String.fromCharCode(0xfeff) + `${lines.join('\n')}\n`);
+  });
+
   app.get(
     '/facets',
     { schema: { tags: ['leads'], response: { 200: Type.Object({ categories: Type.Array(Type.String()), cities: Type.Array(Type.String()) }) } } },

@@ -66,6 +66,45 @@ export const opportunitiesRoutes: FastifyPluginAsyncTypebox = async (app) => {
     },
   );
 
+  /** Propostas de todas as oportunidades, com situação de pagamento derivada. */
+  app.get(
+    '/proposals',
+    { schema: { tags: ['opportunities'], querystring: Merge(Pagination, Type.Object({ status: Type.Optional(StringEnum(PROPOSAL_STATUSES)) })) } },
+    async (req) => {
+      const { page, pageSize, offset, limit } = pageArgs(req.query);
+      const where = req.query.status ? eq(proposals.status, req.query.status) : undefined;
+      const rows = await db
+        .select({ p: proposals, oppTitle: opportunities.title, stage: opportunities.stage, companyName: companies.name })
+        .from(proposals)
+        .innerJoin(opportunities, eq(opportunities.id, proposals.opportunityId))
+        .innerJoin(companies, eq(companies.id, opportunities.companyId))
+        .where(where)
+        .orderBy(desc(proposals.updatedAt))
+        .limit(limit)
+        .offset(offset);
+      const [{ n } = { n: 0 }] = await db.select({ n: sql<number>`COUNT(*)` }).from(proposals).where(where);
+      const items = await Promise.all(
+        rows.map(async (r) => {
+          const st = await paymentStatus(db, r.p);
+          return {
+            ...r.p,
+            opportunityTitle: r.oppTitle,
+            stage: r.stage,
+            companyName: r.companyName,
+            sentAt: iso(r.p.sentAt),
+            acceptedAt: iso(r.p.acceptedAt),
+            rejectedAt: iso(r.p.rejectedAt),
+            createdAt: iso(r.p.createdAt),
+            updatedAt: iso(r.p.updatedAt),
+            paymentStatus: st.status,
+            receivedCents: st.receivedCents,
+          };
+        }),
+      );
+      return { items, total: Number(n), page, pageSize };
+    },
+  );
+
   app.get('/:id', { schema: { tags: ['opportunities'], params: IdParams } }, async (req) => {
     const o = await getOpportunity(db, req.params.id);
     const [company] = await db.select({ id: companies.id, name: companies.name, city: companies.city }).from(companies).where(eq(companies.id, o.companyId));

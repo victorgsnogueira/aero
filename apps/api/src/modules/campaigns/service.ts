@@ -1,7 +1,7 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { AppContext } from '../../core/context.ts';
 import type { Db, DbOrTx, Tx } from '../../db/client.ts';
-import { campaignContactEvents, campaignContacts, campaigns, companies, companyPhones, messages, phones } from '../../db/schema.ts';
+import { campaignContactEvents, campaignContacts, campaigns, companies, companyPhones, conversations, messages, phones } from '../../db/schema.ts';
 import { CAMPAIGN_TRANSITIONS, type CampaignStatus, type ParticipationStatus } from '@aero/shared';
 import { badRequest, conflict, notFound, precondition } from '../../core/errors.ts';
 import { audit, type Actor } from '../../core/audit.ts';
@@ -55,11 +55,13 @@ export async function addAudience(db: Db, campaignId: number, sel: { companyIds?
   }
   if (companyIds.length === 0) return { added: 0, skipped: 0 };
   return db.transaction(async (tx) => {
+    // Dados de demonstração nunca entram em campanhas.
     const links = await tx
       .select({ companyId: companyPhones.companyId, phoneId: companyPhones.phoneId, formatStatus: phones.formatStatus })
       .from(companyPhones)
       .innerJoin(phones, eq(phones.id, companyPhones.phoneId))
-      .where(inArray(companyPhones.companyId, companyIds));
+      .innerJoin(companies, eq(companies.id, companyPhones.companyId))
+      .where(and(inArray(companyPhones.companyId, companyIds), eq(companies.isDemo, false)));
     let added = 0;
     let skipped = 0;
     const seen = new Set<number>();
@@ -162,7 +164,12 @@ export async function scheduleEligible(ctx: AppContext, campaignId: number, limi
         await setParticipationStatus(tx, cc, 'blocked', 'system', `Variáveis sem valor: ${[...rendered.missing, ...rendered.unknown].join(', ')}`);
         return;
       }
-      const conv = await ensureConversation(tx, { sessionId: session.id, phoneId: cc.phoneId, jid: e164ToJid(row.phone.e164!), displayName: row.company.name });
+      // Envia para o JID confirmado pelo gateway na validação (pode diferir do E.164)
+      const targetJid = row.phone.waJid ?? e164ToJid(row.phone.e164!);
+      const conv = await ensureConversation(tx, { sessionId: session.id, phoneId: cc.phoneId, jid: targetJid, displayName: row.company.name });
+      if (row.phone.waJid && conv.jid !== row.phone.waJid) {
+        await tx.update(conversations).set({ jid: row.phone.waJid }).where(eq(conversations.id, conv.id));
+      }
       const [msg] = await tx
         .insert(messages)
         .values({

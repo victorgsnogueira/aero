@@ -28,8 +28,18 @@ const STATUS_RANK: Partial<Record<MessageStatus, number>> = { processing: 1, unk
 
 export class RetryLater extends Error {}
 
-async function phoneForJid(tx: Tx, jid: string, pushName: string | null): Promise<{ id: number; jid: string; lid: string | null }> {
+async function phoneForJid(tx: Tx, rawJid: string, pushName: string | null): Promise<{ id: number; jid: string; lid: string | null }> {
+  const jid = rawJid.replace(/:\d+@/, '@');
+  // 1) JID confirmado pelo gateway na validação. Importante no Brasil: o WhatsApp
+  //    pode identificar celulares sem o nono dígito, diferente do E.164 cadastrado.
+  const [byJid] = await tx.select({ id: phones.id }).from(phones).where(eq(phones.waJid, jid)).limit(1);
+  if (byJid) return { id: byJid.id, jid, lid: isLidJid(jid) ? jid : null };
   const e164 = jidToE164(jid);
+  // 2) Mesmo número em E.164
+  if (e164) {
+    const [byE164] = await tx.select({ id: phones.id }).from(phones).where(eq(phones.e164, e164)).limit(1);
+    if (byE164) return { id: byE164.id, jid, lid: null };
+  }
   if (e164) {
     const n = normalizePhone(e164, null);
     const key = n.e164 ?? `raw:XX:${e164.replace(/\D/g, '')}`;

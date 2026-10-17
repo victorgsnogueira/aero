@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Tipos, lint, testes e build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.4.7
+        env:
+          MYSQL_ROOT_PASSWORD: ci-root
+          MYSQL_DATABASE: aero_test
+          MYSQL_USER: aero
+          MYSQL_PASSWORD: ci-aero
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci-root --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      # Banco descartável do runner; nenhuma integração externa é chamada nos testes.
+      TEST_DATABASE_URL: mysql://aero:ci-aero@127.0.0.1:3306/aero_test
+      DATABASE_URL: mysql://aero:ci-aero@127.0.0.1:3306/aero
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.11.0
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build -w @aero/web
+
+  react-doctor:
+    name: React Doctor
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write # comentário de resumo e comentários nas linhas do PR
+      statuses: write # status do commit com a contagem de erros/avisos
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # necessário para o escopo "changed" comparar com a base
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.11.0
+          cache: npm
+      - run: npm ci
+      # Execução completa com a versão fixada no lockfile; falha o job em diagnósticos de erro.
+      - name: React Doctor (projeto completo)
+        working-directory: apps/web
+        run: npx react-doctor . --no-telemetry --no-color --verbose --blocking error --json --json-out ../../react-doctor-report.json || (cat ../../react-doctor-report.json | head -c 20000; exit 1)
+      - name: Relatório do React Doctor
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: react-doctor-report
+          path: react-doctor-report.json
+          if-no-files-found: ignore
+      # Em pull requests: comentários com os problemas introduzidos pela mudança.
+      - name: React Doctor (comentários no PR)
+        if: github.event_name == 'pull_request'
+        uses: millionco/react-doctor@695e46eee203a5d1855020191aa7e9c010a1250e # v2.4.0
+        with:
+          directory: apps/web
+          version: '0.9.18'
+          scope: changed
+          blocking: error
+
+  docker:
+    name: Build das imagens
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Imagens da API/worker e do frontend
+        run: |
+          docker build --target api -t aero/api:ci .
+          docker build --target web -t aero/web:ci .
+      - name: Compose válido e fronteira de rede
+        run: |
+          cp .env.example .env
+          sed -i 's/^\(MYSQL_ROOT_PASSWORD\|AERO_DB_PASSWORD\|WA_DB_PASSWORD\|REDIS_PASSWORD\|WA_GATEWAY_API_KEY\|WA_WEBHOOK_SECRET\|WA_AUTH_SECRET\|WA_ADMIN_PASSWORD\)=$/\1=ci-placeholder-value-0123456789abcdef/' .env
+          docker compose config --quiet
+          docker compose config --format json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const c=JSON.parse(s);const pub=Object.entries(c.services).flatMap(([n,v])=>(v.ports||[]).map(p=>[n,p]));console.log(pub);if(pub.length!==1||pub[0][0]!=='web'||pub[0][1].host_ip!=='127.0.0.1'){process.exit(1)}})"
+          TS_HOSTNAME=ci.example.ts.net docker compose -f docker-compose.yml -f infra/vps/compose.vps.yml config --quiet

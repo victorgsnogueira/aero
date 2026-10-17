@@ -23,6 +23,8 @@ export interface ImportOutcome {
   duplicates: number;
   surplus: number;
   countedPhones: number;
+  /** Todas as empresas vistas nesta unidade (inclusive já presentes na varredura). */
+  companyIds: number[];
 }
 
 /** Chave da fonte: place_id; na falta, cid/data_id; por último um hash estável de nome+endereço. */
@@ -45,7 +47,7 @@ function countryFor(p: ScrapedPlace, fallback: string | null): string | null {
  * oportunidades, recusas e supressões nunca são apagados ou sobrescritos.
  */
 export async function importPlaces(tx: Tx, ctx: ImportContext, places: ScrapedPlace[]): Promise<ImportOutcome> {
-  const out: ImportOutcome = { places: 0, phonesFound: 0, newCompanies: 0, duplicates: 0, surplus: 0, countedPhones: ctx.countedPhones };
+  const out: ImportOutcome = { places: 0, phonesFound: 0, newCompanies: 0, duplicates: 0, surplus: 0, countedPhones: ctx.countedPhones, companyIds: [] };
   const seenPhonesInScan = new Set<number>();
 
   // Telefones já contabilizados nesta varredura (para não contar duas vezes)
@@ -109,6 +111,8 @@ export async function importPlaces(tx: Tx, ctx: ImportContext, places: ScrapedPl
       isNewCompany = true;
       out.newCompanies++;
     }
+
+    if (!out.companyIds.includes(companyId)) out.companyIds.push(companyId);
 
     // Telefone (opcional)
     const companyPhoneIds: { id: number; valid: boolean }[] = [];

@@ -1,0 +1,118 @@
+@import 'tailwindcss';
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+@plugin "daisyui" {
+  themes: aero --default, aero-dark --prefersdark;
+  logs: false;
+}
+
+/* Tema aero: base neutra "tinta e papel", fiel ao logotipo monocromático,
+   com um único azul de ação. Contraste mínimo AA nos pares de texto. */
+@plugin "daisyui/theme" {
+  name: 'aero';
+  default: true;
+  color-scheme: light;
+  --color-base-100: oklch(99% 0.003 250);
+  --color-base-200: oklch(96.5% 0.005 250);
+  --color-base-300: oklch(91% 0.008 250);
+  --color-base-content: oklch(22% 0.02 260);
+  --color-primary: oklch(45% 0.16 258);
+  --color-primary-content: oklch(98% 0.01 258);
+  --color-secondary: oklch(28% 0.02 260);
+  --color-secondary-content: oklch(97% 0.005 260);
+  --color-accent: oklch(62% 0.13 200);
+  --color-accent-content: oklch(18% 0.03 220);
+  --color-neutral: oklch(24% 0.02 260);
+  --color-neutral-content: oklch(96% 0.005 260);
+  --color-info: oklch(55% 0.14 240);
+  --color-info-content: oklch(98% 0.01 240);
+  --color-success: oklch(52% 0.13 155);
+  --color-success-content: oklch(98% 0.02 155);
+  --color-warning: oklch(75% 0.15 75);
+  --color-warning-content: oklch(25% 0.05 75);
+  --color-error: oklch(52% 0.19 27);
+  --color-error-content: oklch(98% 0.01 27);
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: 'aero-dark';
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-100: oklch(19% 0.012 260);
+  --color-base-200: oklch(16% 0.012 260);
+  --color-base-300: oklch(27% 0.014 260);
+  --color-base-content: oklch(92% 0.008 260);
+  --color-primary: oklch(70% 0.13 255);
+  --color-primary-content: oklch(18% 0.03 258);
+  --color-secondary: oklch(86% 0.01 260);
+  --color-secondary-content: oklch(20% 0.02 260);
+  --color-accent: oklch(74% 0.12 200);
+  --color-accent-content: oklch(18% 0.03 220);
+  --color-neutral: oklch(30% 0.015 260);
+  --color-neutral-content: oklch(92% 0.008 260);
+  --color-info: oklch(72% 0.12 240);
+  --color-info-content: oklch(18% 0.03 240);
+  --color-success: oklch(72% 0.13 155);
+  --color-success-content: oklch(18% 0.03 155);
+  --color-warning: oklch(80% 0.14 80);
+  --color-warning-content: oklch(22% 0.04 80);
+  --color-error: oklch(68% 0.17 27);
+  --color-error-content: oklch(18% 0.03 27);
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+:root {
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Foco sempre visível para navegação por teclado */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.brand-light {
+  display: inline-block;
+}
+.brand-dark {
+  display: none;
+}
+[data-theme='aero-dark'] .brand-light {
+  display: none;
+}
+[data-theme='aero-dark'] .brand-dark {
+  display: inline-block;
+}
+
+.maplibregl-popup-content {
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+  border-radius: var(--radius-box);
+}

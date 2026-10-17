@@ -39,7 +39,8 @@ async function guardAutomatic(ctx: AppContext, tx: Tx, msg: Message): Promise<{ 
     .from(suppressions)
     .where(and(eq(suppressions.phoneId, conv.phoneId), isNull(suppressions.liftedAt)))
     .limit(1);
-  if (sup) return { cancel: 'Contato suprimido (recusa/descadastro)' };
+  // Única exceção: a confirmação (opcional) da própria recusa.
+  if (sup && msg.purpose !== 'decline_ack') return { cancel: 'Contato suprimido (recusa/descadastro)' };
 
   const [phone] = await tx.select().from(phones).where(eq(phones.id, conv.phoneId));
   if (!phone?.e164) return { cancel: 'Telefone sem número válido' };
@@ -80,10 +81,9 @@ async function applyOutcome(ctx: AppContext, msg: Message, outcome: SendOutcome)
           .update(messages)
           .set({ status: sql`CASE WHEN ${messages.status} IN ('delivered','read') THEN ${messages.status} ELSE 'accepted' END`, externalId: outcome.externalId, sentAt: now, error: null, lockedAt: null })
           .where(eq(messages.id, msg.id));
-        await tx
-          .update(conversations)
-          .set({ lastMessageAt: now, state: sql`CASE WHEN ${conversations.state} = 'closed' THEN 'awaiting_reply' ELSE ${conversations.state} END` })
-          .where(eq(conversations.id, msg.conversationId));
+        // Só a primeira abordagem altera a situação da conversa (abaixo); respostas
+        // automáticas — como a confirmação de recusa — não reabrem uma conversa encerrada.
+        await tx.update(conversations).set({ lastMessageAt: now }).where(eq(conversations.id, msg.conversationId));
         if (msg.purpose === 'first_contact' && msg.campaignContactId) {
           const [cc] = await tx.select().from(campaignContacts).where(eq(campaignContacts.id, msg.campaignContactId));
           if (cc && cc.status === 'scheduled') await setParticipationStatus(tx, cc, 'awaiting_reply', 'system', null, { firstSentAt: now });

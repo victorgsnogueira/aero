@@ -74,7 +74,16 @@ async function importUnit(ctx: AppContext, scan: Scan, unit: ScanUnit): Promise<
       .update(scanUnits)
       .set({ status: 'done', placesFound: outcome.places, newRecords: outcome.newCompanies, duplicates: outcome.duplicates, finishedAt: ctx.now(), error: null })
       .where(eq(scanUnits.id, unit.id));
-    await tx.insert(scanQueryLog).values({ queryHash: queryHash(unit.query, scan.language), query: unit.query, language: scan.language, depth: unit.depth, scanUnitId: unit.id, placesFound: outcome.places });
+    await tx.insert(scanQueryLog).values({
+      queryHash: queryHash(unit.query, scan.language),
+      query: unit.query,
+      language: scan.language,
+      depth: unit.depth,
+      scanUnitId: unit.id,
+      placesFound: outcome.places,
+      companyIds: outcome.companyIds,
+      executedAt: ctx.now(),
+    });
   });
   // Resultado já persistido; o CSV no scraper pode ser removido para liberar disco.
   if (unit.externalJobId) await ctx.scraper.deleteJob(unit.externalJobId).catch(() => undefined);
@@ -89,8 +98,8 @@ async function tryReuse(ctx: AppContext, scan: Scan, unit: ScanUnit): Promise<bo
     .where(and(eq(scanQueryLog.queryHash, queryHash(unit.query, scan.language)), sql`${scanQueryLog.depth} >= ${unit.depth}`, sql`${scanQueryLog.executedAt} >= ${since}`))
     .orderBy(sql`${scanQueryLog.executedAt} DESC`)
     .limit(1);
-  if (!prior || prior.scanUnitId === unit.id) return false;
-  const companyRows = await ctx.db.select({ companyId: scanResults.companyId }).from(scanResults).where(eq(scanResults.scanUnitId, prior.scanUnitId));
+  if (!prior || prior.scanUnitId === unit.id || !prior.companyIds?.length) return false;
+  const companyRows = prior.companyIds.map((companyId) => ({ companyId }));
   const counters = await recomputeCounters(ctx.db, scan.id);
   await ctx.db.transaction(async (tx) => {
     let counted = counters.uniquePhones;
@@ -210,7 +219,7 @@ export async function scanTick(ctx: AppContext, scanId: number): Promise<TickRes
 
   // 3) Próxima unidade
   const refreshed = await listUnits(ctx.db, scan.id);
-  let next = refreshed.find((u) => u.status === 'pending');
+  const next = refreshed.find((u) => u.status === 'pending');
   if (!next) {
     // Segunda passada com mais profundidade, se houver orçamento de unidades
     const firstPass = refreshed.filter((u) => u.depth === scan.depth);
