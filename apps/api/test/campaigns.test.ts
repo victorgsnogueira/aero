@@ -350,6 +350,56 @@ describe('campanhas, envio e automação', () => {
     assert.equal((await ccOf(c, a.phoneId)).status, 'qualifying');
   });
 
+  test('mensagens de sistema e conversa consigo mesmo não entram na caixa de entrada', async () => {
+    const own = '5512981647076@s.whatsapp.net';
+    // Sincronização de histórico ao parear (conteúdo vazio, protocolMessage)
+    await webhook('message.received', {
+      key: { id: 'SYS-1', remoteJid: '105681998839873@lid' },
+      from: '105681998839873@lid',
+      receiver: own,
+      chatType: 'PERSONAL',
+      type: 'TEXT',
+      content: '',
+      raw: { key: { id: 'SYS-1', remoteJid: '105681998839873@lid', addressingMode: 'lid' }, message: { protocolMessage: { type: 'HISTORY_SYNC_NOTIFICATION' }, messageContextInfo: {} } },
+    });
+    // Mensagem do próprio número para si mesmo
+    await webhook('message.received', { key: { id: 'SELF-1' }, from: own, receiver: own, chatType: 'PERSONAL', type: 'TEXT', content: 'nota para mim', raw: { message: { conversation: 'nota para mim' } } });
+    assert.equal((await env.ctx.db.select().from(conversations)).length, 0);
+    assert.equal((await env.ctx.db.select().from(messages)).length, 0);
+  });
+
+  test('LID com telefone alternativo cai na conversa do número', async () => {
+    const a = await lead('Contato LID', '+5512991810649');
+    await webhook('message.received', {
+      key: { id: 'LID-1', remoteJid: '200000000000001@lid' },
+      from: '200000000000001@lid',
+      chatType: 'PERSONAL',
+      type: 'TEXT',
+      content: 'Olá',
+      raw: { key: { id: 'LID-1', remoteJid: '200000000000001@lid', remoteJidAlt: '5512991810649@s.whatsapp.net', addressingMode: 'lid' }, message: { conversation: 'Olá' } },
+    });
+    const conv = await convOf(a.phoneId);
+    assert.ok(conv, 'conversa associada ao telefone cadastrado');
+    assert.equal((await env.ctx.db.select().from(conversations)).length, 1);
+  });
+
+  test('lista de teste bloqueia envio manual para contato sem número (somente LID)', async () => {
+    env.ctx.config.sending.allowlist = ['+5512991810649'];
+    await webhook('message.received', {
+      key: { id: 'LID-2', remoteJid: '300000000000001@lid' },
+      from: '300000000000001@lid',
+      chatType: 'PERSONAL',
+      type: 'TEXT',
+      content: 'Oi',
+      raw: { key: { id: 'LID-2', remoteJid: '300000000000001@lid' }, message: { conversation: 'Oi' } },
+    });
+    const [conv] = await env.ctx.db.select().from(conversations);
+    const r = await api<{ status: string }>('POST', `/inbox/conversations/${conv!.id}/messages`, { text: 'teste', clientKey: 'manual-lid-0001' });
+    assert.equal(r.body.status, 'failed');
+    assert.equal(env.wa.sent.length, 0, 'nada enviado');
+    env.ctx.config.sending.allowlist = [];
+  });
+
   test('mensagem automática do destinatário não avança a abordagem', async () => {
     const a = await lead('Auto', '+5511912340002');
     const c = await campaign('A', 'landing_page', offerIds.landingOfferId);

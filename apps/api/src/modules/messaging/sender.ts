@@ -137,8 +137,13 @@ export async function sendMessage(ctx: AppContext, messageId: number): Promise<S
     } else {
       const [conv] = await tx.select().from(conversations).where(eq(conversations.id, msg.conversationId)).for('update');
       const [phone] = conv ? await tx.select().from(phones).where(eq(phones.id, conv.phoneId)) : [];
-      if (phone?.e164 && ctx.config.sending.allowlist.length && !ctx.config.sending.allowlist.includes(phone.e164)) {
-        return { msg, outcome: { kind: 'failed', reason: 'Número fora da lista de teste (SEND_ALLOWLIST)' } as SendOutcome };
+      // Com lista de teste ativa, a trava falha fechada: contato sem número
+      // identificável (ex.: apenas LID) também é bloqueado.
+      if (ctx.config.sending.allowlist.length && (!phone?.e164 || !ctx.config.sending.allowlist.includes(phone.e164))) {
+        return {
+          msg,
+          outcome: { kind: 'failed', reason: phone?.e164 ? 'Número fora da lista de teste (SEND_ALLOWLIST)' : 'Contato sem número identificável; bloqueado pela lista de teste' } as SendOutcome,
+        };
       }
     }
     await tx.update(messages).set({ status: 'processing', lockedAt: ctx.now(), attempts: sql`${messages.attempts} + 1` }).where(eq(messages.id, msg.id));

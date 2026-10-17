@@ -60,6 +60,37 @@ async function phoneForJid(tx: Tx, rawJid: string, pushName: string | null): Pro
   return { id: row!.id, jid, lid: isLidJid(jid) ? jid : null };
 }
 
+/**
+ * Mensagens de sistema do WhatsApp (sincronização de histórico ao parear, troca
+ * de chaves, avisos de segurança etc.) chegam como `message.received` com
+ * conteúdo vazio. Não são mensagens de pessoas e não entram na caixa de entrada.
+ */
+const SYSTEM_MESSAGE_KEYS = new Set(['protocolMessage', 'senderKeyDistributionMessage', 'messageContextInfo', 'keepInChatMessage', 'pollUpdateMessage', 'encReactionMessage']);
+export function isSystemMessage(d: Data): boolean {
+  const raw = (d.raw ?? {}) as { message?: Record<string, unknown> | null };
+  const msg = raw.message;
+  if (!msg || typeof msg !== 'object') return !messageText(d) && !d.fileUrl;
+  if ('protocolMessage' in msg) return true;
+  const contentKeys = Object.keys(msg).filter((k) => !SYSTEM_MESSAGE_KEYS.has(k));
+  return contentKeys.length === 0;
+}
+
+/** JID do próprio número da sessão (campo `receiver` em mensagens recebidas). */
+function ownJidOf(d: Data, event: 'received' | 'sent'): string | null {
+  const v = event === 'received' ? d.receiver : d.from;
+  return typeof v === 'string' ? v.replace(/:\d+@/, '@') : null;
+}
+
+/** JID de telefone alternativo informado pelo Baileys quando o endereçamento é por LID. */
+function altPhoneJid(d: Data): string | null {
+  const raw = (d.raw ?? {}) as { key?: Record<string, unknown> };
+  const k = { ...(raw.key ?? {}), ...((d.key ?? {}) as Record<string, unknown>) };
+  for (const c of [k.remoteJidAlt, k.senderPn, k.participantAlt]) {
+    if (typeof c === 'string' && c.endsWith('@s.whatsapp.net')) return c.replace(/:\d+@/, '@');
+  }
+  return null;
+}
+
 function messageText(d: Data): string | null {
   const content = typeof d.content === 'string' ? d.content : null;
   const caption = typeof d.caption === 'string' ? d.caption : null;
@@ -240,8 +271,13 @@ async function applyAutomation(tx: Tx, ctx: AppContext, convId: number, inboundM
 async function handleReceived(tx: Tx, ctx: AppContext, sessionId: number, d: Data): Promise<{ conversationId: number | null; note: string }> {
   if (d.isGroup === true || (typeof d.chatType === 'string' && d.chatType !== 'PERSONAL')) return { conversationId: null, note: 'ignorado (não pessoal)' };
   const key = (d.key ?? {}) as { id?: string; remoteJid?: string };
-  const from = (typeof d.from === 'string' && d.from) || key.remoteJid;
-  if (!key.id || !from) return { conversationId: null, note: 'sem identificadores' };
+  const rawFrom = (typeof d.from === 'string' && d.from) || key.remoteJid;
+  if (!key.id || !rawFrom) return { conversationId: null, note: 'sem identificadores' };
+  if (isSystemMessage(d)) return { conversationId: null, note: 'mensagem de sistema do WhatsApp ignorada' };
+  // LID: usa o telefone alternativo quando o gateway o informa
+  const from = isLidJid(rawFrom) ? (altPhoneJid(d) ?? rawFrom) : rawFrom;
+  const own = ownJidOf(d, 'received');
+  if (own && from.replace(/:\d+@/, '@') === own) return { conversationId: null, note: 'conversa consigo mesmo ignorada' };
   const pushName = typeof d.pushName === 'string' ? d.pushName : null;
   const phone = await phoneForJid(tx, from, pushName);
   const conv = await ensureConversation(tx, { sessionId, phoneId: phone.id, jid: phone.lid ? from : from.replace(/:\d+@/, '@'), displayName: pushName, lid: phone.lid });
@@ -280,6 +316,9 @@ async function handleSent(tx: Tx, ctx: AppContext, sessionId: number, d: Data): 
   // Já registrada (envio feito pelo aero)?
   const [known] = await tx.select({ id: messages.id, conversationId: messages.conversationId }).from(messages).where(eq(messages.externalId, key.id)).limit(1);
   if (known) return { conversationId: known.conversationId, note: 'envio do aero confirmado' };
+  if (isSystemMessage(d)) return { conversationId: null, note: 'mensagem de sistema do WhatsApp ignorada' };
+  const own = ownJidOf(d, 'sent');
+  if (own && to.replace(/:\d+@/, '@') === own) return { conversationId: null, note: 'conversa consigo mesmo ignorada' };
 
   const phone = await phoneForJid(tx, to, null);
   const conv = await ensureConversation(tx, { sessionId, phoneId: phone.id, jid: to.replace(/:\d+@/, '@'), lid: phone.lid });
