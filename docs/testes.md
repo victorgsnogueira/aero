@@ -49,7 +49,7 @@ Legenda: **A** = teste automatizado; **M** = verificação manual feita; **P** =
 
 ## Pendências reais
 
-- **WhatsApp real:** pareamento, recebimento, envio manual e persistência da sessão após reinício do gateway **validados** pelo proprietário/na execução. Pendentes: recibos de leitura após a correção do mapa de status, mídia e o fluxo de campanha completo. Roteiro: `SEND_ALLOWLIST` com seus números, `SENDING_ENABLED=true`, campanha com 1–2 contatos seus.
+- **WhatsApp real:** pareamento, recebimento, envio manual e persistência da sessão após reinício do gateway **validados** pelo proprietário/na execução. Recibos "Entregue" e "Lida" corretos após a correção do mapa de status (validado pelo proprietário em 17/10/2026). Pendentes: mídia e o fluxo de campanha completo. Roteiro: `SEND_ALLOWLIST` com seus números, `SENDING_ENABLED=true`, campanha com 1–2 contatos seus.
 - **Scraper real (P):** nenhuma varredura contra o Google Maps foi feita (sem região/escopo de teste definidos). Primeiro teste sugerido: 1 termo, 1 bairro, meta 5, `maxUnits` 1.
 - Importação do histórico do gateway (webhooks perdidos enquanto o aero esteve fora).
 - Exclusão/anonimização por titular pela interface.

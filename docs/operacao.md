@@ -36,7 +36,7 @@ Limitações verificadas no código do WA-AKG v1.6.3:
 - Estados de entrega/leitura dependem dos recibos do WhatsApp (`message.status`); a ausência de recibo não significa falha. “Aceita pelo gateway” não é entrega.
 - Promessas de “anti-ban” do projeto não são garantia; o recurso de anti-spam do gateway fica desligado e os limites são aplicados pelo aero.
 
-Validado com o número real (17/10/2026): pareamento, recebimento, envio manual e persistência da sessão após recriar o container do gateway (reconectou sem novo QR code). Mensagens de sistema do WhatsApp (sincronização de histórico ao parear) são ignoradas. Ainda não validados: recibos de leitura após a correção do mapa de status e envio de mídia.
+Validado com o número real (17/10/2026): pareamento, recebimento, envio manual e persistência da sessão após recriar o container do gateway (reconectou sem novo QR code). Mensagens de sistema do WhatsApp (sincronização de histórico ao parear) são ignoradas. Recibos de entrega e leitura validados após a correção do mapa de status. Ainda não validado: envio de mídia.
 
 ## Envio de mensagens: chaves de segurança
 
