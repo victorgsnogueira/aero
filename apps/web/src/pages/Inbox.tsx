@@ -10,6 +10,39 @@ import { useToast } from '../components/toast';
 import { fmtDateTime, fmtRelative, fmtTime, formatMoney } from '../lib/format';
 import { offerPrice } from '../lib/offer';
 
+/** Inicia uma conversa manual com um número (confere no WhatsApp; não envia nada). */
+function NewConversation() {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const qc = useQueryClient();
+  const [phone, setPhone] = useState('');
+  const start = useMutation({
+    mutationFn: () => api.post<{ id: number; e164: string; whatsapp: string }>('/inbox/conversations', { phone }),
+    onSuccess: (r) => {
+      setPhone('');
+      void qc.invalidateQueries({ queryKey: ['inbox'] });
+      if (r.whatsapp !== 'found') toast('info', 'Não foi possível confirmar o WhatsApp agora; o envio informará o resultado.');
+      navigate(`/inbox/${r.id}`);
+    },
+    onError: (e) => toast('error', errorMessage(e)),
+  });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (phone.trim()) start.mutate();
+  };
+  return (
+    <form onSubmit={submit} className="flex gap-2">
+      <label htmlFor="new-conversation" className="sr-only">
+        Número para nova conversa
+      </label>
+      <input id="new-conversation" type="tel" className="input input-sm flex-1" placeholder="Nova conversa: +55 12 99999-9999" value={phone} onChange={(e) => setPhone(e.target.value)} />
+      <button type="submit" className="btn btn-primary btn-sm" disabled={!phone.trim() || start.isPending}>
+        Abrir
+      </button>
+    </form>
+  );
+}
+
 export default function Inbox() {
   const { id } = useParams();
   const [params, setParams] = useSearchParams();
@@ -44,6 +77,7 @@ export default function Inbox() {
       <PageHeader title="Caixa de entrada" description="Conversas do seu número. Mensagens e estados atualizam sem recarregar a página." />
       <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
         <aside className={`flex min-w-0 flex-col gap-2 ${id ? "hidden lg:flex" : ""}`} aria-label="Conversas">
+          <NewConversation />
           <label className="input input-sm w-full">
             <span className="sr-only">Buscar conversa</span>
             <input type="search" placeholder="Buscar nome ou telefone" value={q} onChange={(e) => setQ(e.target.value)} />
