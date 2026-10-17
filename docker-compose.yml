@@ -1,0 +1,167 @@
+# aero — execução local/produção com Docker Compose.
+#
+# Fronteira de acesso: SOMENTE o serviço `web` publica porta, e apenas em
+# 127.0.0.1. Banco, Redis, scraper, gateway, API e worker ficam na rede interna.
+# Para desenvolvimento com a API/web rodando no host, use também compose.dev.yml.
+
+name: aero
+
+x-aero-env: &aero-env
+  NODE_ENV: production
+  TZ: UTC
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  DATABASE_URL: mysql://aero:${AERO_DB_PASSWORD:?defina AERO_DB_PASSWORD}@mysql:3306/aero
+  REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379
+  SCRAPER_URL: http://scraper:8080
+  WA_GATEWAY_URL: http://wa-gateway:3000
+  WA_GATEWAY_API_KEY: ${WA_GATEWAY_API_KEY:?defina WA_GATEWAY_API_KEY}
+  WA_WEBHOOK_SECRET: ${WA_WEBHOOK_SECRET:?defina WA_WEBHOOK_SECRET}
+  WA_WEBHOOK_URL: http://api:3100/api/webhooks/wa
+  WA_SESSION_ID: ${WA_SESSION_ID:-aero-main}
+  SENDING_ENABLED: ${SENDING_ENABLED:-false}
+  SEND_ALLOWLIST: ${SEND_ALLOWLIST:-}
+  MEDIA_DIR: /data/media
+  ALLOWED_ORIGINS: ${ALLOWED_ORIGINS_PROD:-http://localhost:${AERO_HTTP_PORT:-8080},http://127.0.0.1:${AERO_HTTP_PORT:-8080}}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS_PROD:-localhost,127.0.0.1,api}
+
+services:
+  mysql:
+    image: mysql:8.4.7
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?defina MYSQL_ROOT_PASSWORD}
+      AERO_DB_PASSWORD: ${AERO_DB_PASSWORD}
+      WA_DB_PASSWORD: ${WA_DB_PASSWORD:?defina WA_DB_PASSWORD}
+      TZ: UTC
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci", "--default-time-zone=+00:00"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./infra/mysql/init:/docker-entrypoint-initdb.d:ro
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  redis:
+    image: redis:7.4.6-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis_data:/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+  scraper:
+    image: gosom/google-maps-scraper:v1.18.1
+    restart: unless-stopped
+    # Um job por vez (limitação do modo web). Concorrência interna conservadora.
+    command: ["-web", "-addr", ":8080", "-data-folder", "/gmapsdata", "-c", "2"]
+    environment:
+      DISABLE_TELEMETRY: "1"
+    volumes:
+      - scraper_data:/gmapsdata
+    networks: [internal]
+
+  wa-gateway:
+    build:
+      context: ./infra/wa-gateway
+    image: aero/wa-gateway:1.6.3-627a69f
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql://wa_gateway:${WA_DB_PASSWORD}@mysql:3306/wa_gateway
+      AUTH_SECRET: ${WA_AUTH_SECRET:?defina WA_AUTH_SECRET}
+      AUTH_TRUST_HOST: "true"
+      AERO_API_KEY: ${WA_GATEWAY_API_KEY}
+      ADMIN_EMAIL: ${WA_ADMIN_EMAIL:-owner@aero.local}
+      ADMIN_PASSWORD: ${WA_ADMIN_PASSWORD:?defina WA_ADMIN_PASSWORD}
+      BASE_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api
+      NEXT_PUBLIC_SWAGGER_ENABLED: "false"
+      BAILEYS_LOG_LEVEL: error
+      TZ: UTC
+      LOCALE: pt-BR
+    volumes:
+      - wa_data:/app/data
+      - wa_uploads:/app/uploads
+      - wa_media:/app/public/media
+    networks: [internal]
+
+  api:
+    build:
+      context: .
+      target: api
+    image: aero/api:local
+    restart: unless-stopped
+    command: ["sh", "-c", "node src/db/migrate.ts && exec node src/server.ts"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      <<: *aero-env
+      API_HOST: 0.0.0.0
+      API_PORT: "3100"
+    volumes:
+      - aero_media:/data/media
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  worker:
+    image: aero/api:local
+    restart: unless-stopped
+    command: ["node", "src/worker.ts"]
+    stop_grace_period: 60s
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      <<: *aero-env
+    volumes:
+      - aero_media:/data/media
+    networks: [internal]
+
+  web:
+    build:
+      context: .
+      target: web
+    image: aero/web:local
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${AERO_HTTP_PORT:-8080}:80"
+    networks: [internal]
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
+  scraper_data:
+  wa_data:
+  wa_uploads:
+  wa_media:
+  aero_media:

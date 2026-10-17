@@ -1,0 +1,20 @@
+import type { Logger } from 'pino';
+import type { AppConfig } from '../config.ts';
+import type { Db } from '../db/client.ts';
+import type { EventBus } from './events.ts';
+import type { Queues } from './queues.ts';
+import type { ScraperClient } from '../integrations/scraper/client.ts';
+import type { WaGatewayClient } from '../integrations/wa/client.ts';
+
+/** Dependências compartilhadas por rotas, casos de uso e processadores de tarefas. */
+export interface AppContext {
+  config: AppConfig;
+  db: Db;
+  log: Logger;
+  events: EventBus;
+  /** Ausente em testes de unidade que não usam filas. */
+  queues: Queues | null;
+  scraper: ScraperClient;
+  wa: WaGatewayClient;
+  now: () => Date;
+}

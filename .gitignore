@@ -1,0 +1,41 @@
+# Dependências e builds
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# Segredos e configuração local
+.env
+.env.*
+!.env.example
+!**/.env.example
+infra/secrets/
+*.pem
+*.key
+
+# Dados persistentes, sessões, mídias, backups e logs
+data/
+backups/
+infra/data/
+*.sql.gz
+*.log
+logs/
+uploads/
+media/
+
+# Dados reais de leads/exportações
+exports/
+*.csv
+!apps/api/test/fixtures/*.csv
+
+# Ferramentas
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.claude/settings.local.json
+.react-doctor/
+tmp/

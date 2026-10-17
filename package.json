@@ -1,0 +1,39 @@
+{
+  "name": "aero",
+  "private": true,
+  "description": "aero — prospecção, campanhas, atendimento pelo WhatsApp e acompanhamento comercial",
+  "type": "module",
+  "packageManager": "npm@11.19.0",
+  "engines": {
+    "node": ">=24.11 <25"
+  },
+  "workspaces": [
+    "packages/shared",
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w @aero/api",
+    "dev:worker": "npm run dev:worker -w @aero/api",
+    "dev:web": "npm run dev -w @aero/web",
+    "db:generate": "npm run db:generate -w @aero/api",
+    "db:migrate": "npm run db:migrate -w @aero/api",
+    "seed:demo": "npm run seed:demo -w @aero/api",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "doctor": "npm run doctor -w @aero/web",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run build && npm run doctor"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@types/node": "24.19.2",
+    "eslint": "9.39.5",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.7",
+    "globals": "17.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2"
+  }
+}
