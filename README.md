@@ -77,4 +77,5 @@ assets/brand    Logotipo aprovado (versões preta e branca, PNG/SVG/favicon forn
 - [VPS da Hostinger com Tailscale](docs/vps-tailscale.md)
 - [Segurança, dados pessoais, retenção e exclusão](docs/seguranca-dados.md)
 - [Testes, cenários verificados e pendências](docs/testes.md)
+- [Frontend: contrato com a API × apresentação](docs/frontend.md)
 - API: `/api/docs` (Swagger UI) e [docs/openapi.json](docs/openapi.json)
