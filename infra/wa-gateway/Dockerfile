@@ -3,7 +3,8 @@
 # - Node 24 LTS (bookworm-slim) em vez de node:26-alpine;
 # - sem credenciais/admin padrão: o provisionamento usa variáveis obrigatórias;
 # - inicialização própria (entrypoint.sh) que provisiona a chave de API do aero;
-# - Swagger público desabilitado e nenhuma porta publicada pelo compose base.
+# - Swagger público desabilitado e nenhuma porta publicada pelo compose base;
+# - correção do mapa de status de mensagens (patch-status-map.cjs).
 
 ARG WA_AKG_REPO=https://github.com/mrifqidaffaaditya/WA-AKG.git
 # v1.6.3 (estável). A 1.7.0 ainda é beta.
@@ -28,6 +29,9 @@ COPY --from=source /src/patches ./patches/
 COPY --from=source /src/prisma ./prisma/
 RUN npm ci --legacy-peer-deps --foreground-scripts && npm cache clean --force
 COPY --from=source /src/ ./
+# Correção do mapa de status de mensagens (ver patch-status-map.cjs)
+COPY patch-status-map.cjs /tmp/patch-status-map.cjs
+RUN node /tmp/patch-status-map.cjs src/modules/whatsapp/store/index.ts
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate && npm run build
 # Sem `npm prune`: no npm atual ele falha com o opcional @tailwindcss/oxide-wasm32-wasi.

@@ -74,7 +74,7 @@ services:
   wa-gateway:
     build:
       context: ./infra/wa-gateway
-    image: aero/wa-gateway:1.6.3-627a69f
+    image: aero/wa-gateway:1.6.3-627a69f-aero1
     restart: unless-stopped
     depends_on:
       mysql:

@@ -32,10 +32,11 @@ Limitações verificadas no código do WA-AKG v1.6.3:
 - Webhooks são enviados **uma vez**, sem retentativa. Se o aero estiver fora, o evento se perde; o aero reconcilia envios com resultado desconhecido pelo histórico do gateway (`GET /chat/{id}/{jid}`, últimas 100 mensagens), mas respostas recebidas durante a indisponibilidade só aparecem quando o contato escrever de novo. **Pendência:** importar o histórico do gateway para o aero.
 - Histórico anterior ao pareamento é salvo no banco do gateway, mas **não** gera webhook — não aparece na caixa de entrada do aero.
 - Mensagens enviadas pelo próprio celular chegam como `message.sent` e são registradas com origem “Enviada pelo celular”; isso assume a conversa (automação pausada).
+- Mapa de status corrigido no build do gateway (`infra/wa-gateway/patch-status-map.cjs`): o WA-AKG original traduzia o código 3 do Baileys (entregue no aparelho) como "lida" e o 2 (aceita pelo servidor) como "entregue". O patch falha o build se o trecho original mudar.
 - Estados de entrega/leitura dependem dos recibos do WhatsApp (`message.status`); a ausência de recibo não significa falha. “Aceita pelo gateway” não é entrega.
 - Promessas de “anti-ban” do projeto não são garantia; o recurso de anti-spam do gateway fica desligado e os limites são aplicados pelo aero.
 
-Itens que dependem do seu número real e **não foram validados** por mim: pareamento, persistência da sessão entre reinícios, recibos de entrega/leitura, formato de `from`/`receiver` para contatos LID e envio de mídia.
+Validado com o número real (17/10/2026): pareamento, recebimento, envio manual e persistência da sessão após recriar o container do gateway (reconectou sem novo QR code). Mensagens de sistema do WhatsApp (sincronização de histórico ao parear) são ignoradas. Ainda não validados: recibos de leitura após a correção do mapa de status e envio de mídia.
 
 ## Envio de mensagens: chaves de segurança
 
