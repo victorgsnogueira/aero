@@ -34,3 +34,6 @@ Thumbs.db
 .claude/settings.local.json
 .react-doctor/
 tmp/
+
+.codex/
+.mcp.json
