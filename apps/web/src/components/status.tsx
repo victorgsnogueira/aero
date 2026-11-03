@@ -22,72 +22,68 @@ import {
   type WaSessionStatus,
   type WaStatus,
 } from '@aero/shared';
-import { Badge } from './ui';
+import { Icon, type IconName } from './Icon';
 
-type Tone = Parameters<typeof Badge>[0]['tone'];
+function stateIcon(value: string): IconName {
+  if (['completed', 'done', 'found', 'connected', 'accepted', 'confirmed', 'won', 'qualified', 'read'].includes(value)) return 'complete';
+  if (['failed', 'cancelled', 'not_found', 'invalid_format', 'rejected', 'lost', 'blocked', 'logged_out', 'declined'].includes(value)) return 'cancelled';
+  if (['unknown', 'partial', 'inconclusive', 'gateway_unreachable', 'scan_qr', 'awaiting_human'].includes(value)) return 'alert';
+  if (['paused', 'pausing', 'withdrawn'].includes(value)) return 'pause';
+  if (['running', 'queued', 'scheduled', 'processing', 'connecting', 'qualifying', 'awaiting_reply', 'submitted', 'importing'].includes(value)) return 'clock';
+  if (['human', 'handed_off', 'replied'].includes(value)) return 'message';
+  if (['sent', 'delivered'].includes(value)) return 'check';
+  return 'circle';
+}
+
+function StateLabel({ value, label }: { value: string; label: string }) {
+  return (
+    <span className="status-label" data-status={value}>
+      <Icon name={stateIcon(value)} />
+      <span>{label}</span>
+    </span>
+  );
+}
 
 export function ScanStatusBadge({ status }: { status: ScanStatus }) {
-  const tone: Tone = { running: 'info', queued: 'info', completed: 'success', partial: 'warning', failed: 'error', cancelled: 'ghost', cancelling: 'warning', pausing: 'warning', paused: 'neutral', draft: 'ghost' }[status] as Tone;
-  return <Badge tone={tone}>{SCAN_STATUS_LABELS[status]}</Badge>;
+  return <StateLabel value={status} label={SCAN_STATUS_LABELS[status]} />;
 }
 
 export function UnitStatusBadge({ status }: { status: ScanUnitStatus }) {
-  const tone: Tone = ({ done: 'success', failed: 'error', running: 'info', submitted: 'info', importing: 'info', abandoned: 'warning' } as Record<string, Tone>)[status] ?? 'ghost';
-  return <Badge tone={tone}>{SCAN_UNIT_STATUS_LABELS[status]}</Badge>;
-}
-
-export function WaBadge({ status }: { status: WaStatus | null }) {
-  if (!status) return <Badge>Sem telefone</Badge>;
-  const tone: Tone = { found: 'success', not_found: 'neutral', inconclusive: 'warning', invalid_format: 'error', pending: 'ghost' }[status] as Tone;
-  return <Badge tone={tone}>{WA_STATUS_LABELS[status]}</Badge>;
+  return <StateLabel value={status} label={SCAN_UNIT_STATUS_LABELS[status]} />;
 }
 
 export function CampaignStatusBadge({ status }: { status: CampaignStatus }) {
-  const tone: Tone = { active: 'success', paused: 'warning', draft: 'ghost', completed: 'neutral', cancelled: 'error' }[status] as Tone;
-  return <Badge tone={tone}>{CAMPAIGN_STATUS_LABELS[status]}</Badge>;
+  return <StateLabel value={status} label={CAMPAIGN_STATUS_LABELS[status]} />;
 }
 
 export function ParticipationBadge({ status }: { status: ParticipationStatus }) {
-  const map: Partial<Record<ParticipationStatus, Tone>> = {
-    scheduled: 'info',
-    awaiting_reply: 'info',
-    replied: 'primary',
-    qualifying: 'primary',
-    qualified: 'success',
-    handed_off: 'warning',
-    declined: 'error',
-    blocked: 'error',
-    closed_no_reply: 'neutral',
-  };
-  return <Badge tone={map[status] ?? 'ghost'}>{PARTICIPATION_STATUS_LABELS[status]}</Badge>;
+  return <StateLabel value={status} label={PARTICIPATION_STATUS_LABELS[status]} />;
 }
 
 export function ConversationBadge({ state }: { state: ConversationState }) {
-  const tone: Tone = { awaiting_reply: 'info', awaiting_human: 'warning', human: 'primary', closed: 'ghost' }[state] as Tone;
-  return <Badge tone={tone}>{CONVERSATION_STATE_LABELS[state]}</Badge>;
+  return <StateLabel value={state} label={CONVERSATION_STATE_LABELS[state]} />;
 }
 
 export function MessageStatusLabel({ status }: { status: MessageStatus }) {
-  const tone: Tone = ({ failed: 'error', unknown: 'warning', read: 'success', delivered: 'success', accepted: 'neutral', scheduled: 'info', processing: 'info', cancelled: 'ghost' } as Record<string, Tone>)[status] ?? 'ghost';
-  return <Badge tone={tone}>{MESSAGE_STATUS_LABELS[status]}</Badge>;
+  return <StateLabel value={status} label={MESSAGE_STATUS_LABELS[status]} />;
 }
 
 export function StageBadge({ stage }: { stage: OpportunityStage }) {
-  const tone: Tone = { presentation: 'ghost', qualification: 'info', proposal: 'primary', negotiation: 'warning', won: 'success', lost: 'error' }[stage] as Tone;
-  return <Badge tone={tone}>{OPPORTUNITY_STAGE_LABELS[stage]}</Badge>;
+  return <StateLabel value={stage} label={OPPORTUNITY_STAGE_LABELS[stage]} />;
 }
 
 export function ProposalBadge({ status }: { status: ProposalStatus }) {
-  const tone: Tone = { draft: 'ghost', sent: 'info', accepted: 'success', rejected: 'error', expired: 'neutral', withdrawn: 'neutral' }[status] as Tone;
-  return <Badge tone={tone}>{PROPOSAL_STATUS_LABELS[status]}</Badge>;
+  return <StateLabel value={status} label={PROPOSAL_STATUS_LABELS[status]} />;
 }
 
 export function PaymentBadge({ status }: { status: PaymentStatus }) {
-  const tone: Tone = { pending: 'warning', partial: 'info', confirmed: 'success' }[status] as Tone;
-  return <Badge tone={tone}>Pagamento: {PAYMENT_STATUS_LABELS[status]}</Badge>;
+  return <StateLabel value={status} label={`Pagamento: ${PAYMENT_STATUS_LABELS[status]}`} />;
 }
 
 export function SessionBadge({ status }: { status: WaSessionStatus }) {
-  const tone: Tone = ({ connected: 'success', scan_qr: 'warning', connecting: 'info', gateway_unreachable: 'error', logged_out: 'error' } as Record<string, Tone>)[status] ?? 'neutral';
-  return <Badge tone={tone}>{WA_SESSION_STATUS_LABELS[status]}</Badge>;
+  return <StateLabel value={status} label={WA_SESSION_STATUS_LABELS[status]} />;
+}
+
+export function WaBadge({ status }: { status: WaStatus | null }) {
+  return <StateLabel value={status ?? 'no_phone'} label={status ? WA_STATUS_LABELS[status] : 'Sem telefone'} />;
 }

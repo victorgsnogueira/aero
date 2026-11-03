@@ -11,12 +11,11 @@ import { fmtNum } from '../lib/format';
 
 export default function Campaigns() {
   const [creating, setCreating] = useState(false);
-  const q = useQuery({ queryKey: ['campaigns'], queryFn: () => api.get<Campaign[]>('/campaigns') });
+  const q = useQuery({ queryKey: ['campaigns'], queryFn: ({ signal }) => api.get<Campaign[]>('/campaigns', undefined, { signal }) });
   return (
     <>
       <PageHeader
         title="Campanhas"
-        description="Cada campanha tem oferta, mensagens, público e acompanhamento próprios. Todas compartilham a capacidade do seu número."
         actions={
           <button type="button" className="btn btn-primary btn-sm" onClick={() => setCreating(true)}>
             Nova campanha
@@ -28,19 +27,19 @@ export default function Campaigns() {
           list.length === 0 ? (
             <EmptyState title="Nenhuma campanha" description="Crie uma campanha, escolha a oferta, revise as mensagens e adicione contatos da base de leads." />
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="record-list">
               {list.map((c) => {
                 const sent = (c.counts.awaiting_reply ?? 0) + (c.counts.replied ?? 0) + (c.counts.qualifying ?? 0) + (c.counts.qualified ?? 0) + (c.counts.handed_off ?? 0) + (c.counts.declined ?? 0) + (c.counts.closed_no_reply ?? 0);
                 const audience = Object.values(c.counts).reduce((a, b) => a + (b ?? 0), 0);
                 return (
-                  <Link key={c.id} to={`/campanhas/${c.id}`} className="card border border-base-300 bg-base-100 transition-colors hover:border-primary">
-                    <div className="card-body gap-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <h2 className="card-title text-base">{c.name}</h2>
-                        <CampaignStatusBadge status={c.status} />
-                      </div>
-                      <p className="text-sm text-base-content/70">{SERVICE_LABELS[c.service]}</p>
-                      <dl className="mt-2 grid grid-cols-3 gap-2 text-center text-sm">
+                  <Link key={c.id} to={`/campanhas/${c.id}`} className="campaign-row">
+                    <div className="min-w-0">
+                      <h2 className="record-title">{c.name}</h2>
+                      <p className="mt-1 text-sm text-base-content/70">{SERVICE_LABELS[c.service]}</p>
+                      {c.isDemo ? <span className="badge badge-ghost badge-sm mt-1">Demonstração</span> : null}
+                    </div>
+                    <CampaignStatusBadge status={c.status} />
+                    <dl className="campaign-numbers">
                         <div>
                           <dt className="text-xs text-base-content/60">Público</dt>
                           <dd className="font-semibold tabular-nums">{fmtNum(audience)}</dd>
@@ -53,9 +52,7 @@ export default function Campaigns() {
                           <dt className="text-xs text-base-content/60">Qualificados</dt>
                           <dd className="font-semibold tabular-nums">{fmtNum(c.counts.qualified ?? 0)}</dd>
                         </div>
-                      </dl>
-                      {c.isDemo ? <span className="badge badge-ghost badge-sm">Demonstração</span> : null}
-                    </div>
+                    </dl>
                   </Link>
                 );
               })}
@@ -72,7 +69,7 @@ function NewCampaign({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
   const navigate = useNavigate();
-  const offers = useQuery({ queryKey: ['offers'], queryFn: () => api.get<Offer[]>('/offers') });
+  const offers = useQuery({ queryKey: ['offers'], queryFn: ({ signal }) => api.get<Offer[]>('/offers', undefined, { signal }) });
   const [name, setName] = useState('');
   const [service, setService] = useState<Service>('landing_page');
   const [offerId, setOfferId] = useState('');

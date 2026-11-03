@@ -159,7 +159,7 @@ export interface MapResponse {
   mode: 'points' | 'grid';
   total: number;
   withoutCoords: number;
-  points: { id: number; lat: number; lng: number; name: string; waStatus: string | null; stage: string | null }[];
+  points: { id: number; lat: number; lng: number; name: string; waStatus: WaStatus | null; stage: OpportunityStage | null }[];
   cells: { lat: number; lng: number; count: number }[];
 }
 

@@ -27,12 +27,11 @@ const EMPTY: OfferForm = {
 
 export default function Offers() {
   const [editing, setEditing] = useState<{ id: number | null; form: OfferForm } | null>(null);
-  const q = useQuery({ queryKey: ['offers'], queryFn: () => api.get<Offer[]>('/offers') });
+  const q = useQuery({ queryKey: ['offers'], queryFn: ({ signal }) => api.get<Offer[]>('/offers', undefined, { signal }) });
   return (
     <>
       <PageHeader
         title="Ofertas"
-        description="Serviço, escopo e condições apresentados nas campanhas. Ao ser apresentada, a oferta é copiada para a participação; editar aqui não altera o que já foi enviado."
         actions={
           <button type="button" className="btn btn-primary btn-sm" onClick={() => setEditing({ id: null, form: EMPTY })}>
             Nova oferta
@@ -44,24 +43,26 @@ export default function Offers() {
           offers.length === 0 ? (
             <EmptyState title="Nenhuma oferta cadastrada" description="Crie ao menos uma oferta para landing pages ou sistemas sob medida antes de ativar campanhas." />
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="record-list">
               {offers.map((o) => (
-                <article key={o.id} className="card border border-base-300 bg-base-100">
-                  <div className="card-body gap-2">
-                    <p className="text-xs uppercase tracking-wide text-base-content/60">{SERVICE_LABELS[o.service]}</p>
-                    <h2 className="card-title text-base">{o.name}</h2>
-                    <p className="text-lg font-semibold tabular-nums">{offerPrice(o)}</p>
+                <article key={o.id} className="offer-row">
+                  <div className="min-w-0">
+                    <h2 className="record-title">{o.name}</h2>
+                    <p className="mt-1 text-sm text-base-content/70">{SERVICE_LABELS[o.service]}</p>
+                    {o.description ? <p className="mt-2 max-w-prose text-sm">{o.description}</p> : null}
+                  </div>
+                  <div>
+                    <p className="offer-price">{offerPrice(o)}</p>
                     <p className="text-sm text-base-content/70">
                       {o.setupCents !== null ? `Implantação: ${formatMoney(o.setupCents, o.currency)}` : null}
                       {o.setupCents !== null && o.monthlyCents !== null ? ' · ' : null}
                       {o.monthlyCents !== null ? `Mensalidade: ${formatMoney(o.monthlyCents, o.currency)}` : null}
                     </p>
-                    {o.description ? <p className="line-clamp-3 text-sm">{o.description}</p> : null}
-                    <div className="card-actions justify-end">
-                      <button type="button" className="btn btn-sm" onClick={() => setEditing({ id: o.id, form: { ...o } })}>
-                        Editar
-                      </button>
-                    </div>
+                  </div>
+                  <div>
+                    <button type="button" className="btn btn-sm" onClick={() => setEditing({ id: o.id, form: { ...o } })}>
+                      Editar
+                    </button>
                   </div>
                 </article>
               ))}

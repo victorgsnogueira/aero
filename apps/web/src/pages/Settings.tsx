@@ -3,7 +3,7 @@ import { NavLink, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '../lib/api';
 import type { Settings, WaSession } from '../lib/types';
-import { ErrorAlert, Field, Loading, Modal, PageHeader } from '../components/ui';
+import { Badge, ErrorAlert, Field, Loading, Modal, PageHeader } from '../components/ui';
 import { SessionBadge } from '../components/status';
 import { useToast } from '../components/toast';
 import { fmtDateTime } from '../lib/format';
@@ -19,7 +19,7 @@ export default function SettingsPage() {
   const { tab = 'operacao' } = useParams();
   return (
     <>
-      <PageHeader title="Configurações" description="Dados da operação, limites de envio e conexão com o WhatsApp." />
+      <PageHeader title="Configurações" />
       <div role="tablist" className="tabs tabs-border mb-6">
         {TABS.map((t) => (
           <NavLink key={t.key} role="tab" to={`/configuracoes/${t.key}`} className={`tab ${tab === t.key ? 'tab-active' : ''}`}>
@@ -33,7 +33,7 @@ export default function SettingsPage() {
 }
 
 function OperationTab() {
-  const q = useQuery({ queryKey: ['settings'], queryFn: () => api.get<Settings>('/settings') });
+  const q = useQuery({ queryKey: ['settings'], queryFn: ({ signal }) => api.get<Settings>('/settings', undefined, { signal }) });
   if (q.isPending) return <Loading />;
   if (q.isError) return <ErrorAlert error={q.error} onRetry={() => void q.refetch()} />;
   return <OperationForm initial={q.data} />;
@@ -74,15 +74,15 @@ function OperationForm({ initial }: { initial: Settings }) {
   const num = (k: keyof Settings) => (e: React.ChangeEvent<HTMLInputElement>) => set(k, intFromInput(e.target.value, form[k] as number) as never);
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-6">
+    <form onSubmit={onSubmit} className="flex max-w-5xl flex-col gap-2">
       {initial.missingForOutreach.length ? (
         <div role="alert" className="alert alert-warning alert-soft">
           Campanhas ficam bloqueadas até preencher: {initial.missingForOutreach.join(', ')}.
         </div>
       ) : null}
-      <section className="card border border-base-300 bg-base-100">
-        <div className="card-body grid gap-4 md:grid-cols-2">
-          <h2 className="card-title md:col-span-2 text-base">Identificação nas mensagens</h2>
+      <section className="form-section">
+        <div className="form-section-body md:grid-cols-2">
+          <h2 className="font-semibold md:col-span-2 text-base">Identificação nas mensagens</h2>
           <Field label="Seu nome (remetente)">{(id) => <input id={id} className="input w-full" value={form.senderName ?? ''} onChange={(e) => set('senderName', e.target.value)} maxLength={120} />}</Field>
           <Field label="Nome da sua empresa">{(id) => <input id={id} className="input w-full" value={form.companyName ?? ''} onChange={(e) => set('companyName', e.target.value)} maxLength={160} />}</Field>
           <Field label="Apresentação (opcional)" className="md:col-span-2" hint="Texto de referência sobre você e seus serviços.">
@@ -97,10 +97,10 @@ function OperationForm({ initial }: { initial: Settings }) {
         </div>
       </section>
 
-      <section className="card border border-base-300 bg-base-100">
-        <div className="card-body grid gap-4 md:grid-cols-3">
+      <section className="form-section">
+        <div className="form-section-body md:grid-cols-3">
           <div className="md:col-span-3">
-            <h2 className="card-title text-base">Capacidade do número (compartilhada por todas as campanhas)</h2>
+            <h2 className="font-semibold text-base">Capacidade do número (compartilhada por todas as campanhas)</h2>
             <p className="text-sm text-base-content/70">Criar mais campanhas não aumenta esses limites. Valores conservadores reduzem riscos, mas não há garantia contra bloqueios do WhatsApp.</p>
           </div>
           <Field label="Intervalo mínimo entre abordagens (s)">{(id) => <input id={id} type="number" min={30} max={3600} className="input w-full" value={form.sendMinIntervalSeconds} onChange={num('sendMinIntervalSeconds')} />}</Field>
@@ -109,9 +109,9 @@ function OperationForm({ initial }: { initial: Settings }) {
         </div>
       </section>
 
-      <section className="card border border-base-300 bg-base-100">
-        <div className="card-body grid gap-4 md:grid-cols-3">
-          <h2 className="card-title md:col-span-3 text-base">Validação e coleta</h2>
+      <section className="form-section">
+        <div className="form-section-body md:grid-cols-3">
+          <h2 className="font-semibold md:col-span-3 text-base">Validação e coleta</h2>
           <Field label="Revalidar WhatsApp após (dias)">{(id) => <input id={id} type="number" min={1} max={365} className="input w-full" value={form.validationRevalidateDays} onChange={num('validationRevalidateDays')} />}</Field>
           <Field label="Números por consulta">{(id) => <input id={id} type="number" min={1} max={50} className="input w-full" value={form.validationBatchSize} onChange={num('validationBatchSize')} />}</Field>
           <Field label="Pausa entre consultas (ms)">{(id) => <input id={id} type="number" min={1000} max={60000} step={500} className="input w-full" value={form.validationMinIntervalMs} onChange={num('validationMinIntervalMs')} />}</Field>
@@ -124,7 +124,7 @@ function OperationForm({ initial }: { initial: Settings }) {
         </div>
       </section>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 border-t border-base-300 pt-5">
         <button type="submit" className="btn btn-primary" disabled={save.isPending}>
           {save.isPending ? 'Salvando…' : 'Salvar configurações'}
         </button>
@@ -141,11 +141,11 @@ function WhatsAppTab() {
   const qc = useQueryClient();
   const toast = useToast();
   const [confirmLogout, setConfirmLogout] = useState(false);
-  const session = useQuery({ queryKey: ['wa-session'], queryFn: () => api.get<WaSession>('/whatsapp/session'), refetchInterval: 10_000 });
+  const session = useQuery({ queryKey: ['wa-session'], queryFn: ({ signal }) => api.get<WaSession>('/whatsapp/session', undefined, { signal }), refetchInterval: 10_000 });
   const needsQr = session.data?.status === 'scan_qr' || session.data?.status === 'connecting';
   const qr = useQuery({
     queryKey: ['wa-qr'],
-    queryFn: () => api.get<{ image: string | null; reason: string | null }>('/whatsapp/session/qr'),
+    queryFn: ({ signal }) => api.get<{ image: string | null; reason: string | null }>('/whatsapp/session/qr', undefined, { signal }),
     enabled: needsQr,
     refetchInterval: needsQr ? 15_000 : false,
     gcTime: 0,
@@ -164,9 +164,9 @@ function WhatsAppTab() {
   const s = session.data;
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <section className="card border border-base-300 bg-base-100">
-        <div className="card-body gap-4">
-          <h2 className="card-title text-base">Sessão do seu número</h2>
+      <section className="form-section">
+        <div className="flex flex-col gap-4">
+          <h2 className="font-semibold text-base">Sessão do seu número</h2>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
             <dt className="text-base-content/60">Estado</dt>
             <dd>
@@ -202,9 +202,9 @@ function WhatsAppTab() {
           </p>
         </div>
       </section>
-      <section className="card border border-base-300 bg-base-100">
-        <div className="card-body items-center text-center">
-          <h2 className="card-title text-base">Pareamento</h2>
+      <section className="form-section">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <h2 className="font-semibold text-base">Pareamento</h2>
           {s.status === 'connected' ? (
             <p className="text-sm text-base-content/70">Aparelho conectado. Nenhum pareamento necessário.</p>
           ) : needsQr ? (
@@ -257,7 +257,7 @@ interface Diag {
 }
 
 function DiagnosticsTab() {
-  const q = useQuery({ queryKey: ['diagnostics'], queryFn: () => api.get<Diag>('/whatsapp/diagnostics') });
+  const q = useQuery({ queryKey: ['diagnostics'], queryFn: ({ signal }) => api.get<Diag>('/whatsapp/diagnostics', undefined, { signal }) });
   if (q.isPending) return <Loading />;
   if (q.isError) return <ErrorAlert error={q.error} onRetry={() => void q.refetch()} />;
   const rows: [string, { ok: boolean; detail: string }][] = [
@@ -267,8 +267,8 @@ function DiagnosticsTab() {
     ['Envio de mensagens', { ok: q.data.sending.enabled, detail: q.data.sending.detail }],
   ];
   return (
-    <div className="card border border-base-300 bg-base-100">
-      <div className="card-body">
+    <div className="form-section">
+      <div className="flow-root">
         <ul className="divide-y divide-base-300">
           {rows.map(([name, r]) => (
             <li key={name} className="flex items-start justify-between gap-4 py-3">
@@ -276,7 +276,7 @@ function DiagnosticsTab() {
                 <p className="font-medium">{name}</p>
                 <p className="text-sm text-base-content/70">{r.detail}</p>
               </div>
-              <span className={`badge badge-soft ${r.ok ? 'badge-success' : 'badge-warning'}`}>{r.ok ? 'OK' : 'Atenção'}</span>
+              <Badge tone={r.ok ? 'success' : 'warning'}>{r.ok ? 'OK' : 'Atenção'}</Badge>
             </li>
           ))}
         </ul>

@@ -39,7 +39,7 @@ export default function OpportunityDetail() {
   const { id } = useParams();
   const qc = useQueryClient();
   const toast = useToast();
-  const q = useQuery({ queryKey: ['opportunities', 'detail', id], queryFn: () => api.get<Detail>(`/opportunities/${id}`) });
+  const q = useQuery({ queryKey: ['opportunities', 'detail', id], queryFn: ({ signal }) => api.get<Detail>(`/opportunities/${id}`, undefined, { signal }) });
   const [stageTo, setStageTo] = useState<OpportunityStage | null>(null);
   const [reason, setReason] = useState('');
   const [newProposal, setNewProposal] = useState(false);
@@ -96,7 +96,7 @@ export default function OpportunityDetail() {
                 </button>
               ))}
             </section>
-            <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+            <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_18rem]">
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <h2 className="font-semibold">Propostas</h2>
@@ -106,8 +106,8 @@ export default function OpportunityDetail() {
                 </div>
                 {d.proposals.length === 0 ? <p className="text-sm text-base-content/60">Nenhuma proposta registrada.</p> : null}
                 {d.proposals.map((p) => (
-                  <article key={p.id} className="card border border-base-300 bg-base-100">
-                    <div className="card-body gap-2 text-sm">
+                  <article key={p.id} className="border-y border-base-300 py-5">
+                    <div className="flex min-w-0 flex-col gap-3 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <h3 className="font-semibold">{p.title}</h3>
                         <div className="flex gap-1">
@@ -160,7 +160,7 @@ export default function OpportunityDetail() {
               </div>
               <aside className="flex flex-col gap-4 text-sm">
                 {o.offerSnapshot ? (
-                  <section className="rounded-box border border-base-300 bg-base-100 p-3">
+                  <section className="detail-section">
                     <h2 className="mb-1 font-semibold">Oferta apresentada na campanha</h2>
                     <p>{o.offerSnapshot.name}</p>
                     <p>{offerPrice(o.offerSnapshot)}</p>
@@ -168,7 +168,7 @@ export default function OpportunityDetail() {
                   </section>
                 ) : null}
                 {o.qualificationAnswers && Object.keys(o.qualificationAnswers).length ? (
-                  <section className="rounded-box border border-base-300 bg-base-100 p-3">
+                  <section className="detail-section">
                     <h2 className="mb-1 font-semibold">Respostas da qualificação</h2>
                     <dl>
                       {Object.entries(o.qualificationAnswers).map(([k, v]) => (
@@ -180,7 +180,7 @@ export default function OpportunityDetail() {
                     </dl>
                   </section>
                 ) : null}
-                <section className="rounded-box border border-base-300 bg-base-100 p-3">
+                <section className="detail-section">
                   <h2 className="mb-1 font-semibold">Histórico de etapas</h2>
                   <ol className="flex flex-col gap-1 text-xs">
                     {d.history.map((h) => (

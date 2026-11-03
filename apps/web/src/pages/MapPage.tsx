@@ -1,9 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { LngLatBounds, Map as MaplibreMap, NavigationControl, setWorkerUrl, type GeoJSONSource, type LngLatBoundsLike } from 'maplibre-gl';
-// O MapLibre 6 deriva a URL do worker do próprio módulo, o que não funciona com o
-// empacotamento do Vite. O worker é empacotado pelo Vite (resolvendo suas
-// dependências) e registrado explicitamente.
+
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
 setWorkerUrl(maplibreWorkerUrl);
@@ -18,23 +15,18 @@ import { useTheme } from '../lib/theme';
 import { LeadFiltersBar } from '../components/LeadFiltersBar';
 import { LeadDetail } from '../components/LeadDetail';
 import { PageHeader } from '../components/ui';
-import { WaBadge } from '../components/status';
-import { fmtNum } from '../lib/format';
-
-// O mapa apenas VISUALIZA coordenadas coletadas pelo Google Maps Scraper.
-// Não geocodifica, não define região de coleta e não inventa posições:
-// registros sem coordenadas utilizáveis ficam fora do mapa e são contados à parte.
+import { MapLeadList } from '../components/MapLeadList';
 
 const STYLE_LIGHT = 'https://tiles.openfreemap.org/styles/positron';
 const STYLE_DARK = 'https://tiles.openfreemap.org/styles/dark';
 const INITIAL: { center: [number, number]; zoom: number } = { center: [-47.9, -15.8], zoom: 3.5 };
 
-const WA_COLORS: Record<string, string> = {
-  found: '#16a34a',
-  not_found: '#6b7280',
-  inconclusive: '#d97706',
-  invalid_format: '#dc2626',
-  pending: '#2563eb',
+const WA_COLORS: Record<WaStatus, string> = {
+  found: '#22a06b',
+  not_found: '#df5454',
+  inconclusive: '#bf891b',
+  invalid_format: '#a16bd5',
+  pending: '#4b83e5',
 };
 
 function isDark(theme: string): boolean {
@@ -48,14 +40,20 @@ function addLayers(map: MlMap) {
     map.addSource('leads', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, cluster: true, clusterRadius: 48, clusterMaxZoom: 15 });
   }
   if (!map.getSource('cells')) map.addSource('cells', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-  const brand = '#1d4ed8';
+  const brand = '#696c78';
   if (!map.getLayer('clusters'))
     map.addLayer({
       id: 'clusters',
       type: 'circle',
       source: 'leads',
       filter: ['has', 'point_count'],
-      paint: { 'circle-color': brand, 'circle-opacity': 0.85, 'circle-radius': ['step', ['get', 'point_count'], 14, 20, 18, 100, 24, 500, 30], 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' },
+      paint: {
+        'circle-color': brand,
+        'circle-opacity': 0.85,
+        'circle-radius': ['step', ['get', 'point_count'], 14, 20, 18, 100, 24, 500, 30],
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#fff',
+      },
     });
   if (!map.getLayer('cluster-count'))
     map.addLayer({
@@ -73,7 +71,19 @@ function addLayers(map: MlMap) {
       source: 'leads',
       filter: ['!', ['has', 'point_count']],
       paint: {
-        'circle-color': ['match', ['get', 'waStatus'], 'found', WA_COLORS.found!, 'not_found', WA_COLORS.not_found!, 'inconclusive', WA_COLORS.inconclusive!, 'invalid_format', WA_COLORS.invalid_format!, WA_COLORS.pending!],
+        'circle-color': [
+          'match',
+          ['get', 'waStatus'],
+          'found',
+          WA_COLORS.found,
+          'not_found',
+          WA_COLORS.not_found,
+          'inconclusive',
+          WA_COLORS.inconclusive,
+          'invalid_format',
+          WA_COLORS.invalid_format,
+          WA_COLORS.pending,
+        ],
         'circle-radius': ['case', ['boolean', ['feature-state', 'selected'], false], 10, 7],
         'circle-stroke-width': 2,
         'circle-stroke-color': '#ffffff',
@@ -96,11 +106,55 @@ function addLayers(map: MlMap) {
     });
 }
 
+function bindMapEvents(map: MlMap, load: () => Promise<void>, cancelRequests: () => void, select: (id: number | null) => void, onStyleLoad: () => void) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const debounced = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => void load(), 250);
+  };
+  const subscriptions = [map.on('style.load', onStyleLoad)];
+  subscriptions.push(map.on('movestart', () => {
+    clearTimeout(timer);
+    cancelRequests();
+  }));
+  subscriptions.push(map.on('moveend', debounced));
+  subscriptions.push(
+    map.on('click', 'clusters', async (e) => {
+      const f = e.features?.[0];
+      if (!f) return;
+      const zoom = await (map.getSource('leads') as GeoJSONSource).getClusterExpansionZoom(f.properties.cluster_id as number);
+      map.easeTo({ center: (f.geometry as unknown as PointGeometry).coordinates, zoom });
+    }),
+  );
+  subscriptions.push(
+    map.on('click', 'cells', (e) => {
+      const f = e.features?.[0];
+      if (f) map.easeTo({ center: (f.geometry as unknown as PointGeometry).coordinates, zoom: map.getZoom() + 2 });
+    }),
+  );
+  subscriptions.push(
+    map.on('click', 'points', (e) => {
+      const id = e.features?.[0]?.properties?.id as number | undefined;
+      if (id !== undefined) select(Number(id));
+    }),
+  );
+  for (const layer of ['clusters', 'points', 'cells']) {
+    subscriptions.push(map.on('mouseenter', layer, () => (map.getCanvas().style.cursor = 'pointer')));
+    subscriptions.push(map.on('mouseleave', layer, () => (map.getCanvas().style.cursor = '')));
+  }
+  return () => {
+    clearTimeout(timer);
+    subscriptions.forEach((subscription) => subscription.unsubscribe());
+  };
+}
+
 export default function MapPage() {
   const [filters, setFilters] = useLeadFilters();
   const [theme] = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
+  const loadController = useRef<AbortController | null>(null);
+  const fitController = useRef<AbortController | null>(null);
   const filtersRef = useRef<LeadFilters>(filters);
   const fittedRef = useRef(false);
   const selectedRef = useRef<number | null>(null);
@@ -109,6 +163,11 @@ export default function MapPage() {
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const [detail, setDetail] = useState<number | null>(null);
+
+  const cancelRequests = useCallback(() => {
+    loadController.current?.abort();
+    fitController.current?.abort();
+  }, []);
 
   const select = useCallback((id: number | null) => {
     const map = mapRef.current;
@@ -123,6 +182,9 @@ export default function MapPage() {
   const load = useCallback(async () => {
     const map = mapRef.current;
     if (!map) return;
+    loadController.current?.abort();
+    const controller = new AbortController();
+    loadController.current = controller;
     const b = map.getBounds();
     setLoading(true);
     try {
@@ -133,56 +195,68 @@ export default function MapPage() {
         south: Math.max(-90, b.getSouth()),
         north: Math.min(90, b.getNorth()),
         zoom: map.getZoom(),
-      });
+      }, { signal: controller.signal });
+      if (controller.signal.aborted || mapRef.current !== map) return;
       setError(null);
       setData(res);
       (map.getSource('leads') as GeoJSONSource | undefined)?.setData({
         type: 'FeatureCollection',
-        features: res.points.map((p) => ({ type: 'Feature', id: p.id, geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { id: p.id, name: p.name, waStatus: p.waStatus ?? 'pending' } })),
+        features: res.points.map((p) => ({
+          type: 'Feature',
+          id: p.id,
+          geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+          properties: { id: p.id, name: p.name, waStatus: p.waStatus ?? 'pending' },
+        })),
       });
       (map.getSource('cells') as GeoJSONSource | undefined)?.setData({
         type: 'FeatureCollection',
-        features: res.cells.map((c, i) => ({ type: 'Feature', id: i, geometry: { type: 'Point', coordinates: [c.lng, c.lat] }, properties: { count: c.count } })),
+        features: res.cells.map((c, i) => ({
+          type: 'Feature',
+          id: i,
+          geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
+          properties: { count: c.count },
+        })),
       });
     } catch (e) {
-      setError(errorMessage(e));
+      if (!controller.signal.aborted && mapRef.current === map) setError(errorMessage(e));
     } finally {
-      setLoading(false);
+      setLoading((current) => controller.signal.aborted || mapRef.current !== map ? current : false);
     }
   }, []);
 
-  /** Enquadra todos os resultados com coordenadas do filtro atual. */
   const fitToResults = useCallback(async () => {
     const map = mapRef.current;
     if (!map) return;
-    const res = await api.get<MapResponse>('/leads/map', { ...filtersRef.current, west: -180, east: 180, south: -90, north: 90, zoom: 2 });
-    const coords = res.mode === 'points' ? res.points.map((p) => [p.lng, p.lat] as [number, number]) : res.cells.map((c) => [c.lng, c.lat] as [number, number]);
-    if (!coords.length) return;
-    const bounds = coords.reduce((acc, c) => acc.extend(c), new LngLatBounds(coords[0]!, coords[0]!));
-    map.fitBounds(bounds as LngLatBoundsLike, { padding: 48, maxZoom: 15, duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 600 });
+    fitController.current?.abort();
+    const controller = new AbortController();
+    fitController.current = controller;
+    try {
+      const res = await api.get<MapResponse>('/leads/map', { ...filtersRef.current, west: -180, east: 180, south: -90, north: 90, zoom: 2 }, { signal: controller.signal });
+      if (controller.signal.aborted || mapRef.current !== map) return;
+      const coords = res.mode === 'points' ? res.points.map((p) => [p.lng, p.lat] as [number, number]) : res.cells.map((c) => [c.lng, c.lat] as [number, number]);
+      setError(null);
+      if (!coords.length) return;
+      const bounds = coords.reduce((acc, c) => acc.extend(c), new LngLatBounds(coords[0]!, coords[0]!));
+      map.fitBounds(bounds as LngLatBoundsLike, { padding: 48, maxZoom: 15, duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 600 });
+    } catch (e) {
+      if (!controller.signal.aborted && mapRef.current === map) setError(errorMessage(e));
+    }
   }, []);
 
-  // Cria o mapa uma vez. A limpeza abaixo cancela o único timer pendente do
-  // debounce (cada chamada cancela o anterior) e map.remove() solta todos os
-  // listeners registrados com map.on — a regra não acompanha essa reatribuição.
-  // react-doctor-disable-next-line react-doctor/effect-needs-cleanup
+  const initialStyle = useEffectEvent(() => (isDark(theme) ? STYLE_DARK : STYLE_LIGHT));
+
   useEffect(() => {
     if (!containerRef.current) return;
     const map = new MaplibreMap({
       container: containerRef.current,
-      style: isDark(theme) ? STYLE_DARK : STYLE_LIGHT,
+      style: initialStyle(),
       center: INITIAL.center,
       zoom: INITIAL.zoom,
       attributionControl: { compact: false },
     });
     mapRef.current = map;
     map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const debounced = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => void load(), 250);
-    };
-    map.on('style.load', () => {
+    const disconnect = bindMapEvents(map, load, cancelRequests, select, () => {
       addLayers(map);
       void load();
       if (!fittedRef.current) {
@@ -190,57 +264,37 @@ export default function MapPage() {
         void fitToResults();
       }
     });
-    map.on('moveend', debounced);
-    map.on('click', 'clusters', async (e) => {
-      const f = e.features?.[0];
-      if (!f) return;
-      const zoom = await (map.getSource('leads') as GeoJSONSource).getClusterExpansionZoom(f.properties.cluster_id as number);
-      map.easeTo({ center: (f.geometry as unknown as PointGeometry).coordinates, zoom });
-    });
-    map.on('click', 'cells', (e) => {
-      const f = e.features?.[0];
-      if (f) map.easeTo({ center: (f.geometry as unknown as PointGeometry).coordinates, zoom: map.getZoom() + 2 });
-    });
-    map.on('click', 'points', (e) => {
-      const id = e.features?.[0]?.properties?.id as number | undefined;
-      if (id !== undefined) select(Number(id));
-    });
-    for (const layer of ['clusters', 'points', 'cells']) {
-      map.on('mouseenter', layer, () => (map.getCanvas().style.cursor = 'pointer'));
-      map.on('mouseleave', layer, () => (map.getCanvas().style.cursor = ''));
-    }
     return () => {
-      clearTimeout(timer);
+      disconnect();
+      cancelRequests();
       map.remove();
       mapRef.current = null;
     };
-    // O mapa é criado uma única vez; tema e filtros têm efeitos próprios.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load, fitToResults, select, cancelRequests]);
 
-  // Tema: troca o estilo base mantendo as camadas do aero
   useEffect(() => {
+    cancelRequests();
     mapRef.current?.setStyle(isDark(theme) ? STYLE_DARK : STYLE_LIGHT);
-  }, [theme]);
+  }, [theme, cancelRequests]);
 
-  // Filtros: recarrega a área visível
   useEffect(() => {
     filtersRef.current = filters;
     const t = setTimeout(() => void load(), 0);
-    return () => clearTimeout(t);
-  }, [filters, load]);
+    return () => {
+      clearTimeout(t);
+      cancelRequests();
+    };
+  }, [filters, load, cancelRequests]);
 
   const flyTo = (p: { id: number; lat: number; lng: number }) => {
     select(p.id);
     mapRef.current?.easeTo({ center: [p.lng, p.lat], zoom: Math.max(mapRef.current.getZoom(), 15) });
   };
-  const selectedPoint = data?.points.find((p) => p.id === selected) ?? null;
 
   return (
     <>
       <PageHeader
         title="Mapa"
-        description="Visualização das coordenadas coletadas. A precisão depende dos dados retornados pelo Google Maps; o mapa não confirma localização."
         actions={
           <button type="button" className="btn btn-sm" onClick={() => void fitToResults()}>
             Ajustar aos resultados
@@ -248,11 +302,11 @@ export default function MapPage() {
         }
       />
       <LeadFiltersBar filters={filters} onChange={setFilters} />
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
-        <div className="relative h-[60vh] min-h-96 overflow-hidden rounded-box border border-base-300">
+      <div className="map-workspace">
+        <div className="map-canvas">
           <div ref={containerRef} className="h-full w-full" role="region" aria-label="Mapa dos estabelecimentos" />
           {loading ? <span className="loading loading-spinner loading-sm absolute left-3 top-3" aria-label="Carregando pontos" /> : null}
-          <div className="absolute bottom-8 left-3 rounded-box bg-base-100/90 p-2 text-xs shadow">
+          <div className="absolute bottom-8 left-3 rounded-box border border-base-300 bg-base-100 p-2 text-xs">
             {Object.entries(WA_COLORS).map(([k, c]) => (
               <div key={k} className="flex items-center gap-2">
                 <span className="inline-block h-3 w-3 rounded-full" style={{ background: c }} aria-hidden="true" />
@@ -261,41 +315,18 @@ export default function MapPage() {
             ))}
           </div>
         </div>
-        <aside className="flex max-h-[60vh] flex-col gap-3 overflow-hidden" aria-label="Resultados na área visível">
+        <aside className="map-results" aria-label="Resultados na área visível">
           {error ? <div className="alert alert-error alert-soft text-sm">{error}</div> : null}
-          <div className="rounded-box border border-base-300 bg-base-100 p-3 text-sm">
-            <p>
-              <strong>{fmtNum(data?.total ?? 0)}</strong> estabelecimento(s) com coordenadas na área visível
-              {data?.mode === 'grid' ? ' (agrupados no servidor; aproxime para ver os pontos)' : ''}.
-            </p>
-            <p className="mt-1 text-base-content/70">
-              {fmtNum(data?.withoutCoords ?? 0)} sem coordenadas utilizáveis —{' '}
-              <Link className="link" to={`/leads?${new URLSearchParams({ ...(Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])) as Record<string, string>), hasCoords: 'false' }).toString()}`}>
-                ver na lista
-              </Link>
-              .
-            </p>
-          </div>
-          {selectedPoint ? (
-            <div className="rounded-box border border-primary bg-base-100 p-3 text-sm">
-              <p className="font-medium">{selectedPoint.name}</p>
-              <div className="mt-1">
-                <WaBadge status={(selectedPoint.waStatus as WaStatus) ?? 'pending'} />
-              </div>
-              <button type="button" className="btn btn-primary btn-xs mt-2" onClick={() => setDetail(selectedPoint.id)}>
-                Ver dados e andamento
-              </button>
-            </div>
-          ) : null}
-          <ul className="flex-1 overflow-y-auto rounded-box border border-base-300 bg-base-100">
-            {(data?.points ?? []).slice(0, 300).map((p) => (
-              <li key={p.id}>
-                <button type="button" onClick={() => flyTo(p)} className={`w-full px-3 py-2 text-left text-sm hover:bg-base-200 ${selected === p.id ? 'bg-primary/10' : ''}`}>
-                  {p.name}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <MapLeadList
+            data={data}
+            selected={selected}
+            loading={loading}
+            onLocate={flyTo}
+            onOpen={(id) => {
+              select(id);
+              setDetail(id);
+            }}
+          />
         </aside>
       </div>
       {detail !== null ? <LeadDetail id={detail} onClose={() => setDetail(null)} /> : null}

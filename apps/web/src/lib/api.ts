@@ -1,7 +1,3 @@
-// Cliente HTTP do frontend. Mesma origem da API (proxy do Vite / Caddy).
-// O cabeçalho X-Aero-Request é exigido pela API em toda requisição que altera
-// estado (proteção contra CSRF). Nenhuma credencial é guardada no navegador.
-
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
@@ -57,7 +53,7 @@ function safeJson(text: string): unknown {
 }
 
 export const api = {
-  get: <T>(path: string, query?: Query) => request<T>('GET', `${path}${query ? qs(query) : ''}`),
+  get: <T>(path: string, query?: Query, options?: Pick<RequestInit, 'signal'>) => request<T>('GET', `${path}${query ? qs(query) : ''}`, undefined, options),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),

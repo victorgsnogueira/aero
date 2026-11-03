@@ -13,12 +13,11 @@ import { intFromInput } from '../lib/numbers';
 export default function Scans() {
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
-  const q = useQuery({ queryKey: ['scans', page], queryFn: () => api.get<Paged<Scan>>('/scans', { page, pageSize: 20 }) });
+  const q = useQuery({ queryKey: ['scans', page], queryFn: ({ signal }) => api.get<Paged<Scan>>('/scans', { page, pageSize: 20 }, { signal }) });
   return (
     <>
       <PageHeader
         title="Varreduras"
-        description="Coleta de estabelecimentos pelo Google Maps Scraper. Coletar ou validar nunca envia mensagens."
         actions={
           <button type="button" className="btn btn-primary btn-sm" onClick={() => setCreating(true)}>
             Nova varredura
@@ -30,7 +29,7 @@ export default function Scans() {
           data.items.length === 0 ? (
             <EmptyState title="Nenhuma varredura ainda" description="Defina segmento, região e a quantidade desejada para começar a coletar." />
           ) : (
-            <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+            <div className="data-table">
               <table className="table">
                 <thead>
                   <tr>
@@ -81,8 +80,8 @@ function NewScan({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
   const navigate = useNavigate();
-  const settings = useQuery({ queryKey: ['settings'], queryFn: () => api.get<Settings>('/settings') });
-  const campaigns = useQuery({ queryKey: ['campaigns'], queryFn: () => api.get<Campaign[]>('/campaigns') });
+  const settings = useQuery({ queryKey: ['settings'], queryFn: ({ signal }) => api.get<Settings>('/settings', undefined, { signal }) });
+  const campaigns = useQuery({ queryKey: ['campaigns'], queryFn: ({ signal }) => api.get<Campaign[]>('/campaigns', undefined, { signal }) });
   const [f, setF] = useState({
     name: '',
     segment: '',

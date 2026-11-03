@@ -1,6 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
-// Tema claro/escuro: segue o sistema até o proprietário escolher.
 export type ThemeChoice = 'aero' | 'aero-dark' | 'system';
 const KEY = 'aero-theme';
 const listeners = new Set<() => void>();
@@ -36,15 +35,28 @@ function subscribe(cb: () => void) {
   };
 }
 
+function persistChoice(choice: ThemeChoice): void {
+  try {
+    if (choice === 'system') localStorage.removeItem(KEY);
+    else localStorage.setItem(KEY, choice);
+  } catch {
+    return;
+  }
+}
+
+function readResolvedTheme(): 'aero' | 'aero-dark' {
+  const choice = readChoice();
+  return choice === 'system' ? systemTheme() : choice;
+}
+
+export function useResolvedTheme(): 'aero' | 'aero-dark' {
+  return useSyncExternalStore(subscribe, readResolvedTheme, () => 'aero');
+}
+
 export function useTheme(): [ThemeChoice, (c: ThemeChoice) => void] {
   const choice = useSyncExternalStore(subscribe, readChoice, () => 'system' as ThemeChoice);
   const set = useCallback((c: ThemeChoice) => {
-    try {
-      if (c === 'system') localStorage.removeItem(KEY);
-      else localStorage.setItem(KEY, c);
-    } catch {
-      /* armazenamento indisponível: aplica só nesta sessão */
-    }
+    persistChoice(c);
     applyTheme(c);
     listeners.forEach((l) => l());
   }, []);

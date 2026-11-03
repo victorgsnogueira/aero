@@ -23,7 +23,6 @@ export function fmtRelative(iso: string | null | undefined): string {
   return rel.format(Math.round(diff / 86400), 'day');
 }
 
-/** Exibe valores por moeda sem somar moedas diferentes. */
 export function fmtMoneyMap(map: Record<string, number> | null | undefined): string {
   const entries = Object.entries(map ?? {}).filter(([, v]) => v);
   if (!entries.length) return '—';

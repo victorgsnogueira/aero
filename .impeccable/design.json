@@ -1,0 +1,404 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-17T07:25:56.995335+00:00",
+  "title": "Design System: aero",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Índigo de ação",
+        "tonalRamp": [
+          "oklch(15.00% 0.1551 273.60)",
+          "oklch(26.43% 0.1551 273.60)",
+          "oklch(37.86% 0.1551 273.60)",
+          "oklch(49.29% 0.1551 273.60)",
+          "oklch(60.71% 0.1551 273.60)",
+          "oklch(72.14% 0.1551 273.60)",
+          "oklch(83.57% 0.1551 273.60)",
+          "oklch(95.00% 0.1551 273.60)"
+        ]
+      },
+      "primary-dark": {
+        "role": "primary",
+        "displayName": "Índigo de ação escuro",
+        "tonalRamp": [
+          "oklch(15.00% 0.1572 275.54)",
+          "oklch(26.43% 0.1572 275.54)",
+          "oklch(37.86% 0.1572 275.54)",
+          "oklch(49.29% 0.1572 275.54)",
+          "oklch(60.71% 0.1572 275.54)",
+          "oklch(72.14% 0.1572 275.54)",
+          "oklch(83.57% 0.1572 275.54)",
+          "oklch(95.00% 0.1572 275.54)"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas claro",
+        "tonalRamp": [
+          "oklch(15.00% 0.0029 264.54)",
+          "oklch(26.43% 0.0029 264.54)",
+          "oklch(37.86% 0.0029 264.54)",
+          "oklch(49.29% 0.0029 264.54)",
+          "oklch(60.71% 0.0029 264.54)",
+          "oklch(72.14% 0.0029 264.54)",
+          "oklch(83.57% 0.0029 264.54)",
+          "oklch(95.00% 0.0029 264.54)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Painel claro",
+        "tonalRamp": [
+          "oklch(15.00% 0.0000 89.88)",
+          "oklch(26.43% 0.0000 89.88)",
+          "oklch(37.86% 0.0000 89.88)",
+          "oklch(49.29% 0.0000 89.88)",
+          "oklch(60.71% 0.0000 89.88)",
+          "oklch(72.14% 0.0000 89.88)",
+          "oklch(83.57% 0.0000 89.88)",
+          "oklch(95.00% 0.0000 89.88)"
+        ]
+      },
+      "hover": {
+        "role": "neutral",
+        "displayName": "Interação clara",
+        "tonalRamp": [
+          "oklch(15.00% 0.0055 274.96)",
+          "oklch(26.43% 0.0055 274.96)",
+          "oklch(37.86% 0.0055 274.96)",
+          "oklch(49.29% 0.0055 274.96)",
+          "oklch(60.71% 0.0055 274.96)",
+          "oklch(72.14% 0.0055 274.96)",
+          "oklch(83.57% 0.0055 274.96)",
+          "oklch(95.00% 0.0055 274.96)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Texto principal claro",
+        "tonalRamp": [
+          "oklch(15.00% 0.0112 278.10)",
+          "oklch(26.43% 0.0112 278.10)",
+          "oklch(37.86% 0.0112 278.10)",
+          "oklch(49.29% 0.0112 278.10)",
+          "oklch(60.71% 0.0112 278.10)",
+          "oklch(72.14% 0.0112 278.10)",
+          "oklch(83.57% 0.0112 278.10)",
+          "oklch(95.00% 0.0112 278.10)"
+        ]
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Texto de apoio claro",
+        "tonalRamp": [
+          "oklch(15.00% 0.0192 274.56)",
+          "oklch(26.43% 0.0192 274.56)",
+          "oklch(37.86% 0.0192 274.56)",
+          "oklch(49.29% 0.0192 274.56)",
+          "oklch(60.71% 0.0192 274.56)",
+          "oklch(72.14% 0.0192 274.56)",
+          "oklch(83.57% 0.0192 274.56)",
+          "oklch(95.00% 0.0192 274.56)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Divisória clara",
+        "tonalRamp": [
+          "oklch(15.00% 0.0119 277.89 / 0.13)",
+          "oklch(26.43% 0.0119 277.89 / 0.13)",
+          "oklch(37.86% 0.0119 277.89 / 0.13)",
+          "oklch(49.29% 0.0119 277.89 / 0.13)",
+          "oklch(60.71% 0.0119 277.89 / 0.13)",
+          "oklch(72.14% 0.0119 277.89 / 0.13)",
+          "oklch(83.57% 0.0119 277.89 / 0.13)",
+          "oklch(95.00% 0.0119 277.89 / 0.13)"
+        ]
+      },
+      "canvas-dark": {
+        "role": "neutral",
+        "displayName": "Canvas escuro",
+        "tonalRamp": [
+          "oklch(15.00% 0.0083 274.43)",
+          "oklch(26.43% 0.0083 274.43)",
+          "oklch(37.86% 0.0083 274.43)",
+          "oklch(49.29% 0.0083 274.43)",
+          "oklch(60.71% 0.0083 274.43)",
+          "oklch(72.14% 0.0083 274.43)",
+          "oklch(83.57% 0.0083 274.43)",
+          "oklch(95.00% 0.0083 274.43)"
+        ]
+      },
+      "panel-dark": {
+        "role": "neutral",
+        "displayName": "Painel escuro",
+        "tonalRamp": [
+          "oklch(15.00% 0.0080 274.53)",
+          "oklch(26.43% 0.0080 274.53)",
+          "oklch(37.86% 0.0080 274.53)",
+          "oklch(49.29% 0.0080 274.53)",
+          "oklch(60.71% 0.0080 274.53)",
+          "oklch(72.14% 0.0080 274.53)",
+          "oklch(83.57% 0.0080 274.53)",
+          "oklch(95.00% 0.0080 274.53)"
+        ]
+      },
+      "hover-dark": {
+        "role": "neutral",
+        "displayName": "Interação escura",
+        "tonalRamp": [
+          "oklch(15.00% 0.0114 278.04)",
+          "oklch(26.43% 0.0114 278.04)",
+          "oklch(37.86% 0.0114 278.04)",
+          "oklch(49.29% 0.0114 278.04)",
+          "oklch(60.71% 0.0114 278.04)",
+          "oklch(72.14% 0.0114 278.04)",
+          "oklch(83.57% 0.0114 278.04)",
+          "oklch(95.00% 0.0114 278.04)"
+        ]
+      },
+      "text-dark": {
+        "role": "neutral",
+        "displayName": "Texto principal escuro",
+        "tonalRamp": [
+          "oklch(15.00% 0.0068 277.16)",
+          "oklch(26.43% 0.0068 277.16)",
+          "oklch(37.86% 0.0068 277.16)",
+          "oklch(49.29% 0.0068 277.16)",
+          "oklch(60.71% 0.0068 277.16)",
+          "oklch(72.14% 0.0068 277.16)",
+          "oklch(83.57% 0.0068 277.16)",
+          "oklch(95.00% 0.0068 277.16)"
+        ]
+      },
+      "text-secondary-dark": {
+        "role": "neutral",
+        "displayName": "Texto de apoio escuro",
+        "tonalRamp": [
+          "oklch(15.00% 0.0160 277.75)",
+          "oklch(26.43% 0.0160 277.75)",
+          "oklch(37.86% 0.0160 277.75)",
+          "oklch(49.29% 0.0160 277.75)",
+          "oklch(60.71% 0.0160 277.75)",
+          "oklch(72.14% 0.0160 277.75)",
+          "oklch(83.57% 0.0160 277.75)",
+          "oklch(95.00% 0.0160 277.75)"
+        ]
+      },
+      "line-dark": {
+        "role": "neutral",
+        "displayName": "Divisória escura",
+        "tonalRamp": [
+          "oklch(15.00% 0.0000 89.88 / 0.11)",
+          "oklch(26.43% 0.0000 89.88 / 0.11)",
+          "oklch(37.86% 0.0000 89.88 / 0.11)",
+          "oklch(49.29% 0.0000 89.88 / 0.11)",
+          "oklch(60.71% 0.0000 89.88 / 0.11)",
+          "oklch(72.14% 0.0000 89.88 / 0.11)",
+          "oklch(83.57% 0.0000 89.88 / 0.11)",
+          "oklch(95.00% 0.0000 89.88 / 0.11)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Título de página",
+        "purpose": "Nome da página e próxima ação."
+      },
+      "title": {
+        "displayName": "Título de seção",
+        "purpose": "Agrupamentos de trabalho."
+      },
+      "dialog-title": {
+        "displayName": "Título de diálogo",
+        "purpose": "Contexto de uma tarefa modal."
+      },
+      "body": {
+        "displayName": "Corpo operacional",
+        "purpose": "Registros, controles e estados."
+      },
+      "label": {
+        "displayName": "Apoio",
+        "purpose": "Metadados e rótulos discretos."
+      },
+      "total": {
+        "displayName": "Total financeiro",
+        "purpose": "Recebimento em destaque."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "hover",
+        "value": "80ms ease-out",
+        "purpose": "Cores de fundo, borda e texto nos controles."
+      },
+      {
+        "name": "opacity",
+        "value": "120ms ease-out",
+        "purpose": "Mudança de opacidade dos controles."
+      },
+      {
+        "name": "overlay",
+        "value": "120ms",
+        "purpose": "Drawer e diálogo."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "Animação e transição com prefers-reduced-motion: reduce; rolagem automática."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "columns",
+        "value": "48rem"
+      },
+      {
+        "name": "desktop",
+        "value": "64rem"
+      },
+      {
+        "name": "conversation-context",
+        "value": "90rem"
+      }
+    ],
+    "focus": [
+      {
+        "name": "field",
+        "value": "1px solid var(--text-secondary); outline-offset: 0",
+        "purpose": "Campos, select aberto e busca composta."
+      },
+      {
+        "name": "keyboard-action",
+        "value": "2px solid var(--color-base-content); outline-offset: 2px",
+        "purpose": "Foco visível de teclado em ações e links."
+      }
+    ],
+    "previewNotes": "Rampas OKLCH são extensões sintetizadas para a amostra de cor; não substituem os tokens observados no frontmatter. Prévias de componentes são HTML/CSS estáticos com variáveis herdáveis e valores de fallback do tema claro."
+  },
+  "components": [
+    {
+      "name": "Botão principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação principal, com índigo e resposta de cor sem deslocamento.",
+      "html": "<button type=\"button\" class=\"ds-primary\">Criar oferta<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 12h16 m-6-6 6 6-6 6\"/></svg></button>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:32px;height:32px;padding:0 12px;border:1px solid var(--line,rgba(24,25,31,.13));border-radius:4px;background:var(--surface-panel,#fff);color:var(--color-base-content,#24252b);font:400 13px/1.45 'Source Sans 3','Segoe UI',sans-serif;letter-spacing:-.01em;font-weight:500;cursor:pointer;box-shadow:none;transition:background-color 80ms ease-out,border-color 80ms ease-out,color 80ms ease-out,opacity 120ms ease-out;}.ds-primary:is(:hover,:active){background:var(--surface-hover,#edeef2);transform:none;}.ds-primary:disabled{background:var(--surface-hover,#edeef2);color:var(--text-secondary,#666975);opacity:.45;cursor:default;}.ds-primary:focus-visible{outline:2px solid var(--color-base-content,#24252b);outline-offset:2px;}@media(pointer:coarse){.ds-primary{min-height:40px;height:auto;}}@media(prefers-reduced-motion:reduce){.ds-primary{transition-duration:.01ms;}}.ds-primary{background:var(--color-primary,#5362c6);border-color:transparent;color:var(--color-primary-content,#fff);}.ds-primary:is(:hover,:active){background:color-mix(in srgb,var(--color-primary,#5362c6) 90%,var(--color-base-content,#24252b));}"
+    },
+    {
+      "name": "Botão secundário",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Ação contextual de painel com divisória discreta.",
+      "html": "<button type=\"button\" class=\"ds-secondary\">Filtros</button>",
+      "css": ".ds-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:32px;height:32px;padding:0 12px;border:1px solid var(--line,rgba(24,25,31,.13));border-radius:4px;background:var(--surface-panel,#fff);color:var(--color-base-content,#24252b);font:400 13px/1.45 'Source Sans 3','Segoe UI',sans-serif;letter-spacing:-.01em;font-weight:500;cursor:pointer;box-shadow:none;transition:background-color 80ms ease-out,border-color 80ms ease-out,color 80ms ease-out,opacity 120ms ease-out;}.ds-secondary:is(:hover,:active){background:var(--surface-hover,#edeef2);transform:none;}.ds-secondary:disabled{background:var(--surface-hover,#edeef2);color:var(--text-secondary,#666975);opacity:.45;cursor:default;}.ds-secondary:focus-visible{outline:2px solid var(--color-base-content,#24252b);outline-offset:2px;}@media(pointer:coarse){.ds-secondary{min-height:40px;height:auto;}}@media(prefers-reduced-motion:reduce){.ds-secondary{transition-duration:.01ms;}}"
+    },
+    {
+      "name": "Botão ghost",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Ação auxiliar transparente até a interação.",
+      "html": "<button type=\"button\" class=\"ds-ghost\">Limpar filtros</button>",
+      "css": ".ds-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:32px;height:32px;padding:0 12px;border:1px solid var(--line,rgba(24,25,31,.13));border-radius:4px;background:var(--surface-panel,#fff);color:var(--color-base-content,#24252b);font:400 13px/1.45 'Source Sans 3','Segoe UI',sans-serif;letter-spacing:-.01em;font-weight:500;cursor:pointer;box-shadow:none;transition:background-color 80ms ease-out,border-color 80ms ease-out,color 80ms ease-out,opacity 120ms ease-out;}.ds-ghost:is(:hover,:active){background:var(--surface-hover,#edeef2);transform:none;}.ds-ghost:disabled{background:var(--surface-hover,#edeef2);color:var(--text-secondary,#666975);opacity:.45;cursor:default;}.ds-ghost:focus-visible{outline:2px solid var(--color-base-content,#24252b);outline-offset:2px;}@media(pointer:coarse){.ds-ghost{min-height:40px;height:auto;}}@media(prefers-reduced-motion:reduce){.ds-ghost{transition-duration:.01ms;}}.ds-ghost{background:transparent;border-color:transparent;}"
+    },
+    {
+      "name": "Campo de busca",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Busca composta com um único contorno no contêiner.",
+      "html": "<label class=\"ds-search\"><span class=\"ds-search-label\">Buscar empresas</span><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M21 21l-5-5 M17 10a7 7 0 1 1-14 0a7 7 0 0 1 14 0\"/></svg><input aria-label=\"Buscar empresas\" placeholder=\"Buscar empresas\"></label>",
+      "css": ".ds-search{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 8px;border:1px solid var(--line,rgba(24,25,31,.13));border-radius:4px;background:var(--surface-panel,#fff);color:var(--color-base-content,#24252b);font:400 13px/1.45 'Source Sans 3','Segoe UI',sans-serif;letter-spacing:-.01em;transition:background-color 80ms ease-out,border-color 80ms ease-out,color 80ms ease-out,opacity 120ms ease-out;}.ds-search svg{flex:none;color:var(--text-secondary,#666975);}.ds-search input{min-width:0;width:100%;border:0;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;box-shadow:none;}.ds-search input:focus{outline:none;}.ds-search input::placeholder{color:var(--text-secondary,#666975);opacity:1;}.ds-search-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}.ds-search:is(:focus,:focus-visible,:focus-within,:open){border-color:var(--text-secondary,#666975);outline:1px solid var(--text-secondary,#666975);outline-offset:0;}@media(pointer:coarse){.ds-search{height:40px;min-height:40px;}}@media(prefers-reduced-motion:reduce){.ds-search{transition-duration:.01ms;}}"
+    },
+    {
+      "name": "Select de tema",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Controle nativo; aberto ou focado mantém contorno cinza sem offset.",
+      "html": "<select class=\"ds-select\" aria-label=\"Tema\"><option>Tema do sistema</option><option>Claro</option><option>Escuro</option></select>",
+      "css": ".ds-select{height:32px;min-height:32px;padding:0 28px 0 8px;border:1px solid var(--line,rgba(24,25,31,.13));border-radius:4px;background:var(--surface-panel,#fff);color:var(--color-base-content,#24252b);font:400 13px/1.45 'Source Sans 3','Segoe UI',sans-serif;letter-spacing:-.01em;box-shadow:none;transition:background-color 80ms ease-out,border-color 80ms ease-out,color 80ms ease-out,opacity 120ms ease-out;}.ds-select:is(:focus,:focus-visible,:focus-within,:open){border-color:var(--text-secondary,#666975);outline:1px solid var(--text-secondary,#666975);outline-offset:0;}@media(pointer:coarse){.ds-select{height:40px;min-height:40px;}}@media(prefers-reduced-motion:reduce){.ds-select{transition-duration:.01ms;}}"
+    },
+    {
+      "name": "Navegação",
+      "kind": "nav",
+      "refersTo": "navigation-item",
+      "description": "Ícone e texto, seleção índigo e contagem neutra à direita.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Navegação principal\"><a class=\"ds-nav-item ds-nav-current\" href=\"#visao-geral\" aria-current=\"page\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z\"/></svg><span>Visão geral</span></a><a class=\"ds-nav-item\" href=\"#caixa-de-entrada\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 4h16l2 12v4H2v-4z M2 16h6l2 3h4l2-3h6\"/></svg><span>Caixa de entrada</span><span class=\"ds-nav-count\">3</span></a></nav>",
+      "css": ".ds-nav{width:208px;padding:8px;background:var(--surface-panel,#fff);font:400 13px/1.45 'Source Sans 3','Segoe UI',sans-serif;letter-spacing:-.01em;}.ds-nav-item{display:flex;align-items:center;gap:8px;min-height:32px;height:32px;padding:0 8px;border-radius:4px;color:var(--text-secondary,#666975);text-decoration:none;transition:background-color 80ms ease-out,border-color 80ms ease-out,color 80ms ease-out,opacity 120ms ease-out;}.ds-nav-item svg{flex:none;}.ds-nav-item:hover{background:var(--surface-hover,#edeef2);color:var(--color-base-content,#24252b);}.ds-nav-current{background:color-mix(in srgb,var(--color-primary,#5362c6) 12%,transparent);color:var(--color-primary,#5362c6);font-weight:500;}.ds-nav-item:active{background:var(--surface-hover,#edeef2);}.ds-nav-count{margin-left:auto;min-width:16px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;}.ds-nav-item:focus-visible{outline:2px solid var(--color-base-content,#24252b);outline-offset:2px;}@media(pointer:coarse){.ds-nav-item{min-height:40px;height:auto;}}@media(prefers-reduced-motion:reduce){.ds-nav-item{transition-duration:.01ms;}}"
+    },
+    {
+      "name": "Rótulo de estado",
+      "kind": "chip",
+      "refersTo": "status-label",
+      "description": "Estado neutro, reconhecível por ícone e texto, sem pill.",
+      "html": "<span class=\"ds-status\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M21 12a9 9 0 1 1-18 0a9 9 0 0 1 18 0 M12 7v5l3 2\"/></svg><span>Em andamento</span></span>",
+      "css": ".ds-status{display:inline-flex;align-items:center;gap:6px;min-height:20px;max-width:100%;color:var(--text-secondary,#666975);background:transparent;border:0;border-radius:0;font:400 13px/1.45 'Source Sans 3','Segoe UI',sans-serif;letter-spacing:-.01em;line-height:20px;white-space:nowrap;}.ds-status svg{flex:none;width:16px;height:16px;}"
+    },
+    {
+      "name": "Contêiner de registros",
+      "kind": "card",
+      "refersTo": "record-container",
+      "description": "Dados do mesmo conjunto em linhas e divisórias, sem sombra.",
+      "html": "<dl class=\"ds-ledger\"><div class=\"ds-ledger-row\"><dt>Em qualificação</dt><dd>12</dd></div><div class=\"ds-ledger-row\"><dt>Propostas enviadas</dt><dd>4</dd></div></dl>",
+      "css": ".ds-ledger{margin:0;padding:4px 12px;border:1px solid var(--line,rgba(24,25,31,.13));border-radius:4px;background:var(--surface-panel,#fff);color:var(--color-base-content,#24252b);font:400 13px/1.45 'Source Sans 3','Segoe UI',sans-serif;letter-spacing:-.01em;box-shadow:none;}.ds-ledger-row{display:flex;min-height:32px;align-items:center;justify-content:space-between;gap:12px;}.ds-ledger-row+.ds-ledger-row{border-top:1px solid var(--line,rgba(24,25,31,.13));}.ds-ledger dt{margin:0;}.ds-ledger dd{margin:0;text-align:right;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;}"
+    },
+    {
+      "name": "Tabela de leads",
+      "kind": "custom",
+      "refersTo": "lead-table",
+      "description": "Grade fixa com cabeçalhos ordenáveis neutros, seleção parcial por página e dados à direita. A prévia estática mostra um subconjunto de colunas; a aplicação controla ordenação e seleção.",
+      "html": "<div class=\"ds-table-wrap\"><table class=\"ds-table\"><colgroup><col style=\"width:3.5%\"><col><col style=\"width:11.5%\"></colgroup><thead><tr><th scope=\"col\"><input class=\"ds-check\" type=\"checkbox\" aria-label=\"Selecionar todos desta página\" aria-checked=\"mixed\"></th><th scope=\"col\" aria-sort=\"ascending\"><button class=\"ds-sort ds-sorted\" type=\"button\">Empresa<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 20V4 m-5 5 5-5 5 5\"/></svg></button></th><th class=\"ds-right\" scope=\"col\" aria-sort=\"none\"><button class=\"ds-sort\" type=\"button\">Visto em<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M8 4v16 m-3-3 3 3 3-3 M16 20V4 m-3 3 3-3 3 3\"/></svg></button></th></tr></thead><tbody><tr aria-selected=\"true\"><td><input class=\"ds-check\" type=\"checkbox\" checked aria-label=\"Selecionar Empresa Exemplo\"></td><td>Empresa Exemplo</td><td class=\"ds-right\">17/10/2026</td></tr><tr><td><input class=\"ds-check\" type=\"checkbox\" aria-label=\"Selecionar Oficina Exemplo\"></td><td>Oficina Exemplo</td><td class=\"ds-right\">16/10/2026</td></tr></tbody></table></div>",
+      "css": ".ds-table-wrap{max-width:100%;overflow-x:auto;border:1px solid var(--line,rgba(24,25,31,.13));border-radius:4px;background:var(--surface-panel,#fff);color:var(--color-base-content,#24252b);font:400 13px/1.45 'Source Sans 3','Segoe UI',sans-serif;letter-spacing:-.01em;}.ds-table{table-layout:fixed;width:100%;min-width:1120px;border-collapse:collapse;font-size:13px;line-height:20px;}.ds-table tr{height:32px;}.ds-table th,.ds-table td{padding:4px 8px;text-align:left;vertical-align:middle;white-space:nowrap;border-bottom:1px solid var(--line,rgba(24,25,31,.13));}.ds-table th:first-child,.ds-table td:first-child{padding-left:12px;}.ds-table thead{background:var(--surface-hover,#edeef2);color:var(--text-secondary,#666975);font-weight:500;}.ds-table .ds-right{text-align:right;font-variant-numeric:tabular-nums;}.ds-table tr[aria-selected=true]{background:color-mix(in srgb,var(--color-primary,#5362c6) 12%,transparent);}.ds-table tbody tr:hover{background:var(--surface-hover,#edeef2);}.ds-sort{display:inline-flex;align-items:center;gap:4px;min-height:24px;padding:0;border:0;border-radius:2px;background:transparent;color:var(--text-secondary,#666975);font:inherit;text-align:inherit;cursor:pointer;transition:background-color 80ms ease-out,border-color 80ms ease-out,color 80ms ease-out,opacity 120ms ease-out;}.ds-sort svg{opacity:.4;}.ds-sort:is(:hover,.ds-sorted){color:var(--color-base-content,#24252b);}.ds-sort:is(:hover,.ds-sorted) svg{opacity:1;}.ds-sort:focus-visible{outline:2px solid var(--color-base-content,#24252b);outline-offset:2px;}.ds-check{appearance:none;display:inline-grid;place-content:center;width:16px;height:16px;margin:0;border:1px solid var(--line,rgba(24,25,31,.13));border-radius:3px;background:transparent;color:var(--surface-panel,#fff);vertical-align:middle;cursor:pointer;}.ds-check::before{content:'';width:10px;height:8px;background:currentColor;clip-path:polygon(0 40%,20% 20%,40% 45%,80% 0,100% 20%,40% 100%);opacity:0;transition:clip-path 80ms,opacity 80ms;}.ds-check:checked,.ds-check[aria-checked=mixed]{background:var(--color-base-content,#24252b);border-color:var(--line,rgba(24,25,31,.13));}.ds-check:checked::before,.ds-check[aria-checked=mixed]::before{opacity:1;}.ds-check[aria-checked=mixed]::before{clip-path:inset(40% 0);}@media(hover:hover){.ds-check:enabled:hover{border-color:color-mix(in srgb,var(--color-base-content,#24252b) 24%,transparent);}}.ds-check:focus-visible{outline:2px solid var(--color-base-content,#24252b);outline-offset:2px;}@media(pointer:coarse){.ds-sort{min-height:40px;}}@media(prefers-reduced-motion:reduce){.ds-sort,.ds-check::before{transition-duration:.01ms;}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Interface compacta, precisa, consistente e rápida",
+    "overview": "A direção confirmada pelo proprietário parte das cinco decisões que ele forneceu sobre o Linear. A interface de operação usa densidade, peso tipográfico, superfícies planas e ícones para tornar o próximo trabalho reconhecível. Informações de apoio permanecem disponíveis sem disputar a mesma atenção.\n\nEste é um sistema derivado do código. Novas telas devem continuar seus componentes e contratos visuais; uma composição no Figma não é requisito. A composição específica da Visão geral permanece em `.impeccable/surfaces/overview.md`.",
+    "keyCharacteristics": [
+      "Densidade compacta com hierarquia explícita.",
+      "Três superfícies planas por tema e um único destaque índigo.",
+      "Estados por ícone e texto neutros.",
+      "Números e datas alinhados à direita.",
+      "Respostas curtas e alvos maiores no toque."
+    ],
+    "rules": [
+      {
+        "name": "The Single Accent Rule",
+        "body": "Use o índigo para seleção e ação principal; comunique estados com ícone e texto neutros.",
+        "section": "colors"
+      },
+      {
+        "name": "The Comparable Data Rule",
+        "body": "Alinhe números e datas à direita; use algarismos tabulares nas medidas e contagens comparáveis.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Surface Rule",
+        "body": "Diferencie áreas por tom, espaço e divisórias; preserve sombras desativadas em botões, diálogos e controles de mapa.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Field Focus Rule",
+        "body": "Campos, selects e textareas usam contorno de 1px em texto secundário, sem offset, inclusive `select:open`. Botões e links conservam foco visível de teclado de 2px em texto principal com offset de 2px.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "**Do** use três superfícies por tema e reserve o índigo à seleção e à ação principal.",
+      "**Do** mantenha linhas simples compactas e amplie alvos de interação no toque.",
+      "**Do** alinhe números e datas à direita e use algarismos tabulares para comparação.",
+      "**Do** diferencie prioridade, conteúdo principal e apoio pelo peso, espaço e posição.",
+      "**Do** preserve foco visível, estados textuais, rótulos acessíveis e movimento reduzido.",
+      "**Do** preserve as fontes locais, o nome aero e o símbolo aprovado nos dois temas."
+    ],
+    "donts": [
+      "**Don't** dê o mesmo peso a todos os indicadores nem transforme cada informação em card.",
+      "**Don't** adicione descrições genéricas ao topo de páginas.",
+      "**Don't** introduza sombras decorativas ou pills coloridas de estado.",
+      "**Don't** adicione atalhos de navegação ou ajuda de atalhos.",
+      "**Don't** use contorno excessivamente claro nem foco duplo em campos e selects.",
+      "**Don't** use cor como único sinal de estado ou esconda dados essenciais para preservar altura fixa."
+    ]
+  }
+}

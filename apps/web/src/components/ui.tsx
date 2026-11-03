@@ -1,9 +1,10 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { errorMessage } from '../lib/api';
+import { Icon, type IconName } from './Icon';
 
 export function Logo({ size = 28, className = '' }: { size?: number; className?: string }) {
-  // Versão preta para fundo claro e branca para fundo escuro (desenho aprovado, sem alterações).
+
   return (
     <span className={`inline-flex shrink-0 ${className}`} style={{ width: size, height: size }} aria-hidden="true">
       <img src="/brand/tornado-black-256.png" alt="" width={size} height={size} className="brand-light h-full w-full object-contain" />
@@ -14,12 +15,12 @@ export function Logo({ size = 28, className = '' }: { size?: number; className?:
 
 export function PageHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
   return (
-    <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
+    <header className="page-header">
       <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {description ? <p className="mt-1 max-w-3xl text-sm text-base-content/70">{description}</p> : null}
+        <h1>{title}</h1>
+        {description ? <div className="page-context">{description}</div> : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="page-actions">{actions}</div> : null}
     </header>
   );
 }
@@ -36,6 +37,7 @@ export function Loading({ label = 'Carregando…' }: { label?: string }) {
 export function ErrorAlert({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   return (
     <div role="alert" className="alert alert-error alert-soft">
+      <Icon name="alert" />
       <span>{errorMessage(error)}</span>
       {onRetry ? (
         <button type="button" className="btn btn-sm" onClick={onRetry}>
@@ -55,7 +57,7 @@ export function QueryState<T>({ query, children, empty }: { query: UseQueryResul
 
 export function EmptyState({ title, description, action }: { title: string; description?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-box border border-dashed border-base-300 px-6 py-12 text-center">
+    <div className="empty-state">
       <p className="font-medium">{title}</p>
       {description ? <p className="max-w-md text-sm text-base-content/70">{description}</p> : null}
       {action ? <div className="mt-2">{action}</div> : null}
@@ -73,7 +75,8 @@ export function Field({ label, hint, error, children, className = '' }: { label:
       {children(id)}
       {hint ? <p className="text-xs text-base-content/60">{hint}</p> : null}
       {error ? (
-        <p className="text-xs text-error" role="alert">
+        <p className="flex items-center gap-1 text-xs text-error" role="alert">
+          <Icon name="alert" />
           {error}
         </p>
       ) : null}
@@ -102,25 +105,23 @@ export function Pagination({ page, pageSize, total, onChange }: { page: number; 
 }
 
 type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'error' | 'primary' | 'ghost';
-const TONE_CLASS: Record<Tone, string> = {
-  neutral: 'badge-neutral',
-  info: 'badge-info',
-  success: 'badge-success',
-  warning: 'badge-warning',
-  error: 'badge-error',
-  primary: 'badge-primary',
-  ghost: 'badge-ghost',
+const TONE_ICON: Partial<Record<Tone, IconName>> = {
+  info: 'clock',
+  success: 'complete',
+  warning: 'alert',
+  error: 'cancelled',
+  primary: 'circle',
 };
 
 export function Badge({ tone = 'ghost', children, title }: { tone?: Tone; children: ReactNode; title?: string }) {
   return (
-    <span className={`badge badge-soft badge-sm whitespace-nowrap ${TONE_CLASS[tone]}`} title={title}>
+    <span className="status-label" title={title}>
+      {TONE_ICON[tone] ? <Icon name={TONE_ICON[tone]} /> : null}
       {children}
     </span>
   );
 }
 
-/** Diálogo modal acessível (elemento <dialog> nativo). */
 export function Modal({ open, onClose, title, children, actions, wide = false }: { open: boolean; onClose: () => void; title: string; children: ReactNode; actions?: ReactNode; wide?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -145,10 +146,10 @@ export function Modal({ open, onClose, title, children, actions, wide = false }:
 
 export function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
   return (
-    <div className="rounded-box border border-base-300 bg-base-100 p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-base-content/60">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-base-content/60">{hint}</p> : null}
+    <div className="metric">
+      <p className="metric-label">{label}</p>
+      <p className="metric-value">{value}</p>
+      {hint ? <p className="metric-hint">{hint}</p> : null}
     </div>
   );
 }

@@ -4,11 +4,12 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { CONVERSATION_STATES, CONVERSATION_STATE_LABELS, MESSAGE_ORIGIN_LABELS, SERVICE_LABELS, type ConversationState } from '@aero/shared';
 import { api, errorMessage, newClientKey } from '../lib/api';
 import type { ChatMessage, ConversationDetail, ConversationListItem, Paged } from '../lib/types';
-import { EmptyState, ErrorAlert, Loading, PageHeader, Pagination } from '../components/ui';
+import { Badge, EmptyState, ErrorAlert, Loading, PageHeader, Pagination } from '../components/ui';
 import { ConversationBadge, MessageStatusLabel, ParticipationBadge, StageBadge, WaBadge } from '../components/status';
 import { useToast } from '../components/toast';
 import { fmtDateTime, fmtRelative, fmtTime, formatMoney } from '../lib/format';
 import { offerPrice } from '../lib/offer';
+import { Icon } from '../components/Icon';
 
 export default function Inbox() {
   const { id } = useParams();
@@ -20,12 +21,24 @@ export default function Inbox() {
   const [q, setQ] = useState('');
   const [debounced, setDebounced] = useState('');
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(q), 300);
+    if (q === debounced) return;
+    const t = setTimeout(() => {
+      setDebounced(q);
+      setPage(1);
+    }, 300);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, debounced]);
   const list = useQuery({
     queryKey: ['inbox', 'list', state, unread, campaignId, debounced, page],
-    queryFn: () => api.get<Paged<ConversationListItem> & { totalUnread: number }>('/inbox/conversations', { state, unread, campaignId, q: debounced || undefined, page, pageSize: 40 }),
+    queryFn: ({ signal }) =>
+      api.get<Paged<ConversationListItem> & { totalUnread: number }>('/inbox/conversations', {
+        state,
+        unread,
+        campaignId,
+        q: debounced || undefined,
+        page,
+        pageSize: 40,
+      }, { signal }),
     placeholderData: keepPreviousData,
     refetchInterval: 30_000,
   });
@@ -41,9 +54,9 @@ export default function Inbox() {
 
   return (
     <>
-      <PageHeader title="Caixa de entrada" description="Conversas do seu número. Mensagens e estados atualizam sem recarregar a página." />
-      <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
-        <aside className={`flex min-w-0 flex-col gap-2 ${id ? "hidden lg:flex" : ""}`} aria-label="Conversas">
+      <PageHeader title="Caixa de entrada" />
+      <div className="inbox-workspace">
+        <aside className={`flex min-w-0 flex-col gap-2 ${id ? 'hidden lg:flex' : ''}`} aria-label="Conversas">
           <label className="input input-sm w-full">
             <span className="sr-only">Buscar conversa</span>
             <input type="search" placeholder="Buscar nome ou telefone" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -61,7 +74,12 @@ export default function Inbox() {
               ))}
             </select>
             <label className="flex items-center gap-1 text-sm">
-              <input type="checkbox" className="checkbox checkbox-xs" checked={!!unread} onChange={(e) => setFilter('unread', e.target.checked ? 'true' : undefined)} />
+              <input
+                type="checkbox"
+                className="checkbox checkbox-xs"
+                checked={!!unread}
+                onChange={(e) => setFilter('unread', e.target.checked ? 'true' : undefined)}
+              />
               Não lidas
             </label>
           </div>
@@ -72,21 +90,30 @@ export default function Inbox() {
           ) : list.data.items.length === 0 ? (
             <EmptyState title="Nenhuma conversa" description="Conversas aparecem após o primeiro envio ou quando alguém escreve para o seu número." />
           ) : (
-            <ul className="max-h-[70vh] divide-y divide-base-300 overflow-y-auto rounded-box border border-base-300 bg-base-100">
+            <ul className="inbox-list divide-y divide-base-300">
               {list.data.items.map((c) => (
                 <li key={c.id}>
-                  <Link to={`/inbox/${c.id}${location.search}`} className={`block px-3 py-2 hover:bg-base-200 ${String(c.id) === id ? 'bg-primary/10' : ''}`} aria-current={String(c.id) === id ? 'page' : undefined}>
+                  <Link
+                    to={`/inbox/${c.id}${location.search}`}
+                    className={`block px-3 py-2 hover:bg-base-200 ${String(c.id) === id ? 'bg-primary/10' : ''}`}
+                    aria-current={String(c.id) === id ? 'page' : undefined}
+                  >
                     <div className="flex items-center justify-between gap-2">
-                      <span className={`min-w-0 truncate ${c.unreadCount ? "font-semibold" : ""}`}>{c.title}</span>
+                      <span className={`min-w-0 truncate ${c.unreadCount ? 'font-semibold' : ''}`}>{c.title}</span>
                       <span className="shrink-0 text-xs text-base-content/60">{fmtRelative(c.lastMessageAt)}</span>
                     </div>
-                    <p className="truncate text-xs text-base-content/70">
+                    <p className="truncate text-sm text-base-content/70">
                       {c.lastDirection === 'out' ? 'Você: ' : ''}
                       {c.lastBody ?? '(mídia)'}
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-1">
                       <ConversationBadge state={c.state} />
-                      {c.automationPaused ? <span className="badge badge-ghost badge-xs">Automação pausada</span> : null}
+                      {c.automationPaused ? (
+                        <span className="status-label">
+                          <Icon name="pause" />
+                          Automação pausada
+                        </span>
+                      ) : null}
                       {c.unreadCount ? <span className="badge badge-primary badge-xs">{c.unreadCount}</span> : null}
                       {c.campaignName ? <span className="truncate text-xs text-base-content/60">{c.campaignName}</span> : null}
                     </div>
@@ -97,7 +124,9 @@ export default function Inbox() {
           )}
           {list.data ? <Pagination page={page} pageSize={list.data.pageSize} total={list.data.total} onChange={setPage} /> : null}
         </aside>
-        <section className={id ? '' : 'hidden lg:block'}>{id ? <Conversation key={id} id={Number(id)} /> : <EmptyState title="Selecione uma conversa" />}</section>
+        <section className={id ? 'min-w-0' : 'hidden min-w-0 lg:block'}>
+          {id ? <Conversation key={id} id={Number(id)} /> : <EmptyState title="Selecione uma conversa" />}
+        </section>
       </div>
     </>
   );
@@ -107,18 +136,23 @@ function Conversation({ id }: { id: number }) {
   const qc = useQueryClient();
   const toast = useToast();
   const navigate = useNavigate();
-  const endRef = useRef<HTMLDivElement>(null);
-  const q = useQuery({ queryKey: ['inbox', 'conversation', id], queryFn: () => api.get<ConversationDetail>(`/inbox/conversations/${id}`) });
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const contextButtonRef = useRef<HTMLButtonElement>(null);
+  const [contextOpen, setContextOpen] = useState(false);
+  const q = useQuery({ queryKey: ['inbox', 'conversation', id], queryFn: ({ signal }) => api.get<ConversationDetail>(`/inbox/conversations/${id}`, undefined, { signal }) });
   const refresh = () => void qc.invalidateQueries({ queryKey: ['inbox'] });
-  const markRead = useMutation({ mutationFn: () => api.post(`/inbox/conversations/${id}/read`), onSuccess: () => void qc.invalidateQueries({ queryKey: ['attention'] }) });
+  const { mutate: markRead } = useMutation({
+    mutationFn: () => api.post(`/inbox/conversations/${id}/read`),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['attention'] }),
+  });
   const unreadCount = q.data?.conversation.unreadCount ?? 0;
   useEffect(() => {
-    if (unreadCount > 0) markRead.mutate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unreadCount, id]);
+    if (unreadCount > 0) markRead();
+  }, [unreadCount, id, markRead]);
   const lastId = q.data?.messages.at(-1)?.id;
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: 'end' });
+    const messages = messagesRef.current;
+    if (messages) messages.scrollTop = messages.scrollHeight;
   }, [lastId]);
 
   const action = useMutation({
@@ -142,11 +176,12 @@ function Conversation({ id }: { id: number }) {
   const title = d.companies[0]?.name ?? c.displayName ?? d.phone?.e164 ?? 'Conversa';
   const human = c.automationPaused || c.state === 'human';
   return (
-    <div className="grid gap-4 2xl:grid-cols-[1fr_300px]">
-      <div className="flex h-[75vh] flex-col overflow-hidden rounded-box border border-base-300 bg-base-100">
+    <div className="conversation-workspace">
+      <div className="conversation-thread">
         <header className="flex flex-wrap items-center gap-2 border-b border-base-300 px-4 py-2">
           <button type="button" className="btn btn-ghost btn-xs lg:hidden" onClick={() => navigate('/inbox')}>
-            ← Voltar
+            <Icon name="arrow" className="rotate-180" />
+            Voltar
           </button>
           <div className="min-w-40 flex-1">
             <p className="truncate font-semibold">{title}</p>
@@ -167,19 +202,45 @@ function Conversation({ id }: { id: number }) {
               Encerrar
             </button>
           ) : null}
+          <button
+            ref={contextButtonRef}
+            type="button"
+            className="btn btn-ghost btn-sm conversation-context-toggle"
+            aria-expanded={contextOpen}
+            aria-controls={`conversation-details-${id}`}
+            onClick={() => setContextOpen(!contextOpen)}
+          >
+            <Icon name="more" />
+            Detalhes
+          </button>
         </header>
-        <div className="flex-1 overflow-y-auto px-4 py-3" aria-live="polite">
+        <div ref={messagesRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-3" aria-live="polite" aria-label="Mensagens da conversa">
           {d.hasMore ? <p className="mb-2 text-center text-xs text-base-content/60">Mostrando as últimas 100 mensagens.</p> : null}
           <ol className="flex flex-col gap-2">
             {d.messages.map((m) => (
               <MessageBubble key={m.id} m={m} onChanged={refresh} />
             ))}
           </ol>
-          <div ref={endRef} />
         </div>
         <Composer conversationId={id} onSent={refresh} human={human} />
       </div>
-      <ContextPanel d={d} onPatch={(b) => patch.mutate(b)} />
+      <div id={`conversation-details-${id}`} className={`conversation-context-panel ${contextOpen ? 'is-open' : ''}`}>
+        <div className="conversation-context-bar">
+          <strong>Detalhes da conversa</strong>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            aria-label="Fechar detalhes da conversa"
+            onClick={() => {
+              setContextOpen(false);
+              contextButtonRef.current?.focus();
+            }}
+          >
+            <Icon name="cancelled" />
+          </button>
+        </div>
+        <ContextPanel d={d} onPatch={(b) => patch.mutate(b)} />
+      </div>
     </div>
   );
 }
@@ -192,22 +253,28 @@ function MessageBubble({ m, onChanged }: { m: ChatMessage; onChanged: () => void
     onSuccess: onChanged,
     onError: (e) => toast('error', errorMessage(e)),
   });
-  const cancel = useMutation({ mutationFn: () => api.post(`/inbox/messages/${m.id}/cancel`), onSuccess: onChanged, onError: (e) => toast('error', errorMessage(e)) });
+  const cancel = useMutation({
+    mutationFn: () => api.post(`/inbox/messages/${m.id}/cancel`),
+    onSuccess: onChanged,
+    onError: (e) => toast('error', errorMessage(e)),
+  });
   return (
     <li className={`chat ${out ? 'chat-end' : 'chat-start'}`}>
       <div className="chat-header mb-0.5 flex items-center gap-1 text-xs text-base-content/60">
         <span>{out ? MESSAGE_ORIGIN_LABELS[m.origin] : 'Contato'}</span>
         <time dateTime={m.occurredAt}>{fmtTime(m.occurredAt)}</time>
       </div>
-      <div className={`chat-bubble whitespace-pre-wrap text-sm ${out ? (m.status === 'cancelled' ? 'opacity-50' : 'chat-bubble-primary') : ''}`}>
+      <div className={`chat-bubble whitespace-pre-wrap ${out ? (m.status === 'cancelled' ? 'opacity-50' : 'chat-bubble-primary') : ''}`}>
         {m.media ? (
           <p className="mb-1">
             {m.media.available ? (
               <a href={`/api/inbox/messages/${m.id}/media`} target="_blank" rel="noreferrer" className="link">
-                📎 {m.media.fileName || m.media.kind}
+                <Icon name="attach" /> {m.media.fileName || m.media.kind}
               </a>
             ) : (
-              <span>📎 {m.media.kind} (não disponível)</span>
+              <span>
+                <Icon name="attach" /> {m.media.kind} (não disponível)
+              </span>
             )}
           </p>
         ) : null}
@@ -216,7 +283,11 @@ function MessageBubble({ m, onChanged }: { m: ChatMessage; onChanged: () => void
       {out ? (
         <div className="chat-footer mt-0.5 flex flex-wrap items-center gap-1">
           <MessageStatusLabel status={m.status} />
-          {m.error ? <span className="max-w-xs truncate text-xs text-base-content/60" title={m.error}>{m.error}</span> : null}
+          {m.error ? (
+            <span className="max-w-xs truncate text-xs text-base-content/60" title={m.error}>
+              {m.error}
+            </span>
+          ) : null}
           {m.status === 'unknown' ? (
             <>
               <button type="button" className="btn btn-ghost btn-xs" onClick={() => resolve.mutate('sent')}>
@@ -280,16 +351,29 @@ function Composer({ conversationId, onSent, human }: { conversationId: number; o
       {file ? (
         <p className="text-xs">
           Anexo: {file.name} ({Math.round(file.size / 1024)} KB){' '}
-          <button type="button" className="link" onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }}>
+          <button
+            type="button"
+            className="link"
+            onClick={() => {
+              setFile(null);
+              if (fileRef.current) fileRef.current.value = '';
+            }}
+          >
             remover
           </button>
         </p>
       ) : null}
       <div className="flex items-end gap-2">
         <label className="btn btn-ghost btn-sm" title="Anexar arquivo">
-          <span aria-hidden="true">📎</span>
+          <Icon name="attach" />
           <span className="sr-only">Anexar arquivo</span>
-          <input ref={fileRef} type="file" className="hidden" accept="image/jpeg,image/png,image/webp,video/mp4,audio/mpeg,audio/ogg,application/pdf,text/plain" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <input
+            ref={fileRef}
+            type="file"
+            className="hidden"
+            accept="image/jpeg,image/png,image/webp,video/mp4,audio/mpeg,audio/ogg,application/pdf,text/plain"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          />
         </label>
         <label htmlFor={`composer-${conversationId}`} className="sr-only">
           Mensagem
@@ -309,9 +393,11 @@ function Composer({ conversationId, onSent, human }: { conversationId: number; o
             }
           }}
         />
-        <button type="submit" className="btn btn-primary btn-sm" disabled={send.isPending || (!text.trim() && !file)}>
-          {send.isPending ? 'Enviando…' : 'Enviar'}
-        </button>
+        <div className="composer-send">
+          <button type="submit" className="btn btn-primary btn-sm" title="Enviar" disabled={send.isPending || (!text.trim() && !file)}>
+            {send.isPending ? 'Enviando…' : 'Enviar'}
+          </button>
+        </div>
       </div>
     </form>
   );
@@ -324,8 +410,8 @@ function ContextPanel({ d, onPatch }: { d: ConversationDetail; onPatch: (b: Reco
   const [notes, setNotes] = useState(c.notes ?? '');
   const part = d.participations[0];
   return (
-    <aside className="flex flex-col gap-4 text-sm" aria-label="Contexto do contato">
-      <section className="rounded-box border border-base-300 bg-base-100 p-3">
+    <aside className="conversation-context" aria-label="Contexto do contato">
+      <section className="detail-section">
         <h2 className="mb-2 font-semibold">Lead</h2>
         {d.companies.length === 0 ? <p className="text-base-content/60">Contato não está na base de leads.</p> : null}
         {d.companies.map((co) => (
@@ -340,12 +426,12 @@ function ContextPanel({ d, onPatch }: { d: ConversationDetail; onPatch: (b: Reco
         {d.phone ? (
           <div className="mt-1 flex flex-wrap gap-1">
             <WaBadge status={d.phone.wa_status} />
-            {Number(d.phone.suppressed) ? <span className="badge badge-error badge-soft badge-sm">Bloqueado (recusa)</span> : null}
+            {Number(d.phone.suppressed) ? <Badge tone="error">Bloqueado (recusa)</Badge> : null}
           </div>
         ) : null}
       </section>
       {part ? (
-        <section className="rounded-box border border-base-300 bg-base-100 p-3">
+        <section className="detail-section">
           <h2 className="mb-2 font-semibold">Campanha</h2>
           <Link to={`/campanhas/${part.campaignId}`} className="link link-hover">
             {part.campaignName}
@@ -359,7 +445,9 @@ function ContextPanel({ d, onPatch }: { d: ConversationDetail; onPatch: (b: Reco
               <p className="font-medium">Oferta apresentada: {part.offerSnapshot.name}</p>
               <p>{offerPrice(part.offerSnapshot)}</p>
               {part.offerSnapshot.setupCents !== null ? <p>Implantação: {formatMoney(part.offerSnapshot.setupCents, part.offerSnapshot.currency)}</p> : null}
-              {part.offerSnapshot.monthlyCents !== null ? <p>Mensalidade: {formatMoney(part.offerSnapshot.monthlyCents, part.offerSnapshot.currency)}</p> : null}
+              {part.offerSnapshot.monthlyCents !== null ? (
+                <p>Mensalidade: {formatMoney(part.offerSnapshot.monthlyCents, part.offerSnapshot.currency)}</p>
+              ) : null}
               <p className="text-base-content/60">Registrada em {fmtDateTime(part.offerSnapshot.capturedAt)}</p>
             </div>
           ) : null}
@@ -375,7 +463,7 @@ function ContextPanel({ d, onPatch }: { d: ConversationDetail; onPatch: (b: Reco
           ) : null}
         </section>
       ) : null}
-      <section className="rounded-box border border-base-300 bg-base-100 p-3">
+      <section className="detail-section">
         <h2 className="mb-2 font-semibold">Oportunidades</h2>
         {d.opportunities.length === 0 ? <p className="text-base-content/60">Nenhuma.</p> : null}
         {d.opportunities.map((o) => (
@@ -387,12 +475,19 @@ function ContextPanel({ d, onPatch }: { d: ConversationDetail; onPatch: (b: Reco
           </div>
         ))}
       </section>
-      <section className="flex flex-col gap-2 rounded-box border border-base-300 bg-base-100 p-3">
+      <section className="detail-section flex flex-col gap-2">
         <h2 className="font-semibold">Próxima ação</h2>
         <label className="sr-only" htmlFor="next-action">
           Próxima ação
         </label>
-        <input id="next-action" className="input input-sm w-full" value={nextAction} maxLength={255} onChange={(e) => setNextAction(e.target.value)} placeholder="Ex.: enviar proposta" />
+        <input
+          id="next-action"
+          className="input input-sm w-full"
+          value={nextAction}
+          maxLength={255}
+          onChange={(e) => setNextAction(e.target.value)}
+          placeholder="Ex.: enviar proposta"
+        />
         <label className="text-xs" htmlFor="next-due">
           Prazo
         </label>

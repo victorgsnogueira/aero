@@ -15,14 +15,13 @@ export default function Proposals() {
   const [page, setPage] = useState(1);
   const q = useQuery({
     queryKey: ['opportunities', 'proposals', status, page],
-    queryFn: () => api.get<Paged<Row>>('/opportunities/proposals', { status: status || undefined, page, pageSize: 50 }),
+    queryFn: ({ signal }) => api.get<Paged<Row>>('/opportunities/proposals', { status: status || undefined, page, pageSize: 50 }, { signal }),
     placeholderData: keepPreviousData,
   });
   return (
     <>
       <PageHeader
         title="Propostas e pagamentos"
-        description="Proposta aceita e pagamento confirmado são registros distintos. Pagamentos são lançados manualmente; não há gateway de pagamento nesta versão."
         actions={
           <>
             <label className="sr-only" htmlFor="prop-status">
@@ -44,7 +43,7 @@ export default function Proposals() {
           data.items.length === 0 ? (
             <EmptyState title="Nenhuma proposta" description="Crie propostas a partir de uma oportunidade." action={<Link to="/oportunidades" className="btn btn-sm">Ir para oportunidades</Link>} />
           ) : (
-            <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+            <div className="data-table">
               <table className="table table-sm">
                 <thead>
                   <tr>

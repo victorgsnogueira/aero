@@ -72,7 +72,7 @@ const toConfig = (c: Campaign): Config => ({
 
 export default function CampaignDetail() {
   const { id } = useParams();
-  const q = useQuery({ queryKey: ['campaigns', 'detail', id], queryFn: () => api.get<Detail>(`/campaigns/${id}`) });
+  const q = useQuery({ queryKey: ['campaigns', 'detail', id], queryFn: ({ signal }) => api.get<Detail>(`/campaigns/${id}`, undefined, { signal }) });
   if (q.isPending) return <Loading />;
   if (q.isError) return <ErrorAlert error={q.error} onRetry={() => void q.refetch()} />;
   return <CampaignView key={q.data.campaign.id} detail={q.data} />;
@@ -161,7 +161,7 @@ function CampaignView({ detail }: { detail: Detail }) {
 
       {tab === 'resumo' ? (
         <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="metric-grid">
             <Stat label="Público" value={fmtNum(audience)} />
             <Stat label="Aguardando resposta" value={fmtNum(c.counts.awaiting_reply ?? 0)} />
             <Stat label="Em qualificação" value={fmtNum(c.counts.qualifying ?? 0)} />
@@ -244,7 +244,7 @@ function CampaignView({ detail }: { detail: Detail }) {
 type SetFn = <K extends keyof Config>(k: K, v: Config[K]) => void;
 
 function MessagesTab({ campaign, cfg, set, disabled }: { campaign: Campaign; cfg: Config; set: SetFn; disabled: boolean }) {
-  const offers = useQuery({ queryKey: ['offers'], queryFn: () => api.get<Offer[]>('/offers') });
+  const offers = useQuery({ queryKey: ['offers'], queryFn: ({ signal }) => api.get<Offer[]>('/offers', undefined, { signal }) });
   const list = (offers.data ?? []).filter((o) => o.service === campaign.service);
   return (
     <fieldset disabled={disabled} className="flex flex-col gap-8">
@@ -277,7 +277,7 @@ function MessagesTab({ campaign, cfg, set, disabled }: { campaign: Campaign; cfg
 
 function QualificationTab({ cfg, set, disabled, campaignId }: { cfg: Config; set: SetFn; disabled: boolean; campaignId: number }) {
   const qs = cfg.qualificationQuestions;
-  // Identificadores estáveis por item (a chave da pergunta é editável e não serve de key)
+
   const [ids, setIds] = useState<string[]>(() => qs.map(() => crypto.randomUUID()));
   if (ids.length !== qs.length) setIds(qs.map((_, i) => ids[i] ?? crypto.randomUUID()));
   const update = (i: number, patch: Partial<QualificationQuestion>) => set('qualificationQuestions', qs.map((q, j) => (j === i ? { ...q, ...patch } : q)));
@@ -315,7 +315,7 @@ function QualificationTab({ cfg, set, disabled, campaignId }: { cfg: Config; set
       </Field>
       <ol className="flex flex-col gap-3">
         {qs.map((q, i) => (
-          <li key={ids[i]} className="flex flex-col gap-2 rounded-box border border-base-300 bg-base-100 p-3 md:flex-row md:items-start">
+          <li key={ids[i]} className="flex flex-col gap-3 border-b border-base-300 py-4 md:flex-row md:items-start">
             <span className="w-6 pt-2 text-sm text-base-content/60">{i + 1}.</span>
             <label className="sr-only" htmlFor={`qk-${campaignId}-${i}`}>
               Chave
@@ -390,10 +390,10 @@ function AudienceTab({ campaign }: { campaign: Campaign }) {
   const [review, setReview] = useState(false);
   const q = useQuery({
     queryKey: ['campaigns', 'contacts', campaign.id, status, page],
-    queryFn: () => api.get<Paged<CampaignContact>>(`/campaigns/${campaign.id}/contacts`, { status: status || undefined, page, pageSize: 50 }),
+    queryFn: ({ signal }) => api.get<Paged<CampaignContact>>(`/campaigns/${campaign.id}/contacts`, { status: status || undefined, page, pageSize: 50 }, { signal }),
     placeholderData: keepPreviousData,
   });
-  const elig = useQuery({ queryKey: ['campaigns', 'eligibility', campaign.id], queryFn: () => api.get<Eligibility>(`/campaigns/${campaign.id}/eligibility`), enabled: review });
+  const elig = useQuery({ queryKey: ['campaigns', 'eligibility', campaign.id], queryFn: ({ signal }) => api.get<Eligibility>(`/campaigns/${campaign.id}/eligibility`, undefined, { signal }), enabled: review });
   const remove = useMutation({
     mutationFn: (id: number) => api.post(`/campaigns/${campaign.id}/contacts/remove`, { ids: [id] }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['campaigns'] }),
@@ -425,7 +425,7 @@ function AudienceTab({ campaign }: { campaign: Campaign }) {
       ) : q.isError ? (
         <ErrorAlert error={q.error} />
       ) : (
-        <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+        <div className="data-table">
           <table className="table table-sm">
             <thead>
               <tr>
@@ -513,7 +513,7 @@ interface Pending {
 function PendingTab({ campaignId }: { campaignId: number }) {
   const qc = useQueryClient();
   const toast = useToast();
-  const q = useQuery({ queryKey: ['campaigns', 'pending', campaignId], queryFn: () => api.get<Pending>(`/campaigns/${campaignId}/pending`) });
+  const q = useQuery({ queryKey: ['campaigns', 'pending', campaignId], queryFn: ({ signal }) => api.get<Pending>(`/campaigns/${campaignId}/pending`, undefined, { signal }) });
   const [editing, setEditing] = useState<{ id: number; body: string } | null>(null);
   const [chosen, setChosen] = useState<Set<number>>(new Set());
   const refresh = () => void qc.invalidateQueries({ queryKey: ['campaigns', 'pending', campaignId] });
@@ -551,7 +551,7 @@ function PendingTab({ campaignId }: { campaignId: number }) {
                   <p className="mb-1 font-medium">{d.companyName} — atual</p>
                   {d.current}
                 </div>
-                <div className="whitespace-pre-wrap rounded-box bg-primary/10 p-2 text-xs">
+                <div className="whitespace-pre-wrap rounded-box bg-base-200 p-2 text-xs">
                   <p className="mb-1 font-medium">Com o modelo novo</p>
                   {d.updated}
                 </div>
@@ -568,7 +568,7 @@ function PendingTab({ campaignId }: { campaignId: number }) {
       ) : (
         <ul className="flex flex-col gap-2">
           {q.data.items.map((m) => (
-            <li key={m.id} className="rounded-box border border-base-300 bg-base-100 p-3 text-sm">
+            <li key={m.id} className="border-b border-base-300 py-4 text-sm">
               <div className="flex flex-wrap justify-between gap-2">
                 <p className="font-medium">
                   {m.companyName} <span className="text-xs font-normal text-base-content/60">({m.purpose === 'first_contact' ? 'primeira abordagem' : m.purpose})</span>

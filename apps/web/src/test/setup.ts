@@ -1,4 +1,3 @@
-// Ambiente de teste (jsdom): APIs ausentes usadas pelos componentes.
 if (!window.matchMedia) {
   window.matchMedia = (query: string) =>
     ({

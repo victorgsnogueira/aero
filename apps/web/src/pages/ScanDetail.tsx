@@ -16,7 +16,7 @@ export default function ScanDetail() {
   const toast = useToast();
   const q = useQuery({
     queryKey: ['scans', 'detail', id],
-    queryFn: () => api.get<{ scan: Scan; units: ScanUnit[] }>(`/scans/${id}`),
+    queryFn: ({ signal }) => api.get<{ scan: Scan; units: ScanUnit[] }>(`/scans/${id}`, undefined, { signal }),
     refetchInterval: (query) => (query.state.data && ACTIVE.includes(query.state.data.scan.status) ? 5000 : false),
   });
   const act = useMutation({
@@ -69,7 +69,7 @@ export default function ScanDetail() {
                 </>
               }
             />
-            <section className="mb-6 rounded-box border border-base-300 bg-base-100 p-4">
+            <section className="mb-6 border-y border-base-300 py-5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="font-medium">
                   Meta: {fmtNum(s.targetProgress)} de {fmtNum(s.targetCount)} {SCAN_TARGET_LABELS[s.targetKind].toLowerCase()}
@@ -82,7 +82,7 @@ export default function ScanDetail() {
               {s.statusReason ? <p className="mt-2 text-sm">{s.statusReason}</p> : null}
               {s.lastError ? <p className="mt-1 text-sm text-warning">{s.lastError}</p> : null}
             </section>
-            <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="metric-grid mb-6">
               <Stat label="Estabelecimentos" value={fmtNum(s.placesFound)} />
               <Stat label="Telefones encontrados" value={fmtNum(s.phonesFound)} />
               <Stat label="Novos registros" value={fmtNum(s.newRecords)} />
@@ -104,7 +104,7 @@ export default function ScanDetail() {
               </button>
             </div>
             <h2 className="mb-2 mt-6 font-semibold">Unidades de trabalho (consultas ao coletor)</h2>
-            <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+            <div className="data-table">
               <table className="table table-sm">
                 <thead>
                   <tr>

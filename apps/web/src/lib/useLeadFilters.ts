@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router';
 import type { WaStatus } from '@aero/shared';
 import type { LeadFilters } from './types';
 
-/** Filtros da base de leads guardados na URL (compartilhados entre lista e mapa). */
 export function useLeadFilters(): [LeadFilters, (patch: Partial<LeadFilters>) => void] {
   const [params, setParams] = useSearchParams();
   const filters = useMemo<LeadFilters>(() => {

@@ -38,7 +38,7 @@ interface LeadDetailData {
 export function LeadDetail({ id, onClose }: { id: number; onClose: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
-  const q = useQuery({ queryKey: ['leads', 'detail', id], queryFn: () => api.get<LeadDetailData>(`/leads/${id}`) });
+  const q = useQuery({ queryKey: ['leads', 'detail', id], queryFn: ({ signal }) => api.get<LeadDetailData>(`/leads/${id}`, undefined, { signal }) });
   const [notes, setNotes] = useState<string | null>(null);
   const [suppressing, setSuppressing] = useState<number | null>(null);
   const [reason, setReason] = useState('bloqueio manual');
@@ -86,7 +86,7 @@ export function LeadDetail({ id, onClose }: { id: number; onClose: () => void })
       ) : (
         <div className="flex flex-col gap-5 text-sm">
           {q.data.company.isDemo ? <div className="alert alert-info alert-soft">Registro de demonstração (não é dado real).</div> : null}
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2">
             <dt className="text-base-content/60">Categoria</dt>
             <dd>{q.data.company.category ?? '—'}</dd>
             <dt className="text-base-content/60">Endereço</dt>
@@ -128,7 +128,7 @@ export function LeadDetail({ id, onClose }: { id: number; onClose: () => void })
             {q.data.phones.length === 0 ? <p className="text-base-content/60">Nenhum telefone coletado.</p> : null}
             <ul className="flex flex-col gap-2">
               {q.data.phones.map((p) => (
-                <li key={p.id} className="rounded-box border border-base-300 p-3">
+                <li key={p.id} className="border-y border-base-300 py-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium tabular-nums">{p.e164 ?? p.raw_value}</span>
                     {p.format_status !== 'valid' ? <Badge tone="warning">{p.format_status === 'needs_review' ? 'Revisar formato' : 'Formato inválido'}</Badge> : null}
