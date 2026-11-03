@@ -18,6 +18,8 @@ Somente o Caddy publica porta, e somente em `127.0.0.1`. Banco, Redis, scraper, 
 
 ## Módulos (apps/api/src/modules)
 
+O workspace `apps/mcp` oferece uma ponte MCP por stdio para a API HTTP local, cobrindo os fluxos comerciais completos: cadastros, operação, campanhas, coleta, validação, atendimento, propostas e pagamentos. Novas operações de cadastro manual e abertura de conversa são expostas pelo MCP, sem novas telas. Não acessa o banco nem integrações diretamente e não abre porta. Veja [configuração e limites](mcp.md).
+
 | Módulo | Responsabilidade |
 | --- | --- |
 | `settings` | Configuração da operação (registro único): remetente, empresa, fuso, limites globais do número, validação, coleta. |
@@ -57,7 +59,7 @@ Dinheiro: inteiros em centavos (`BIGINT`) com coluna de moeda. Datas: `DATETIME(
 4. **Outbox transacional.** Mudanças de negócio gravam a intenção (`outbox`) na mesma transação; um relay publica no BullMQ (job id = id do outbox). Queda entre commit e fila não perde operações.
 5. **Envio em três passos.** (a) transação curta com bloqueio da conversa/participação, reverificação de todas as regras e marcação `processing`; (b) chamada ao gateway fora da transação; (c) gravação do resultado. Timeout/5xx/erro após a chamada ⇒ `unknown`, sem reenvio automático; reconciliação busca a mensagem no histórico do gateway; o proprietário pode resolver manualmente. Falha de conexão (requisição não chegou) é reprogramada com limite.
 6. **Webhooks deduplicados.** Chave estável por evento (`message.*` pelo id da mensagem; status por id+estado). Estados de entrega só avançam (aceita → entregue → lida), mesmo fora de ordem. `message.sent` é processado com 5 s de atraso para não confundir o eco do próprio envio com mensagem enviada pelo celular.
-7. **Identidade WhatsApp.** Conversas usam o JID confirmado na validação (`phones.wa_jid`), que pode diferir do E.164 (ex.: celulares brasileiros identificados sem o nono dígito). Respostas são associadas pelo JID, depois pelo E.164. JIDs `@lid` não resolvidos ficam como contato “para revisão”.
+7. **Identidade WhatsApp e caixa de entrada comercial.** Conversas usam o JID confirmado na validação (`phones.wa_jid`), que pode diferir do E.164 (ex.: celulares brasileiros identificados sem o nono dígito). Respostas são associadas pelo JID, pelo E.164 ou pelo LID já vinculado à conversa. Um telefone alternativo informado pelo gateway permite vincular o LID ao lead conhecido. Mensagens recebidas ou enviadas pelo celular só entram na caixa de entrada quando há vínculo com empresa, campanha, oportunidade ou abertura/envio explícito pelo Aero. Números e LIDs desconhecidos não criam contatos nem conversas. A lista, os detalhes e os contadores também excluem conversas pessoais importadas anteriormente.
 8. **Capacidade compartilhada.** Limites globais (intervalo mínimo, por hora, por dia) valem para o número; cada campanha tem janela, fuso e limite diário próprios; revezamento pela campanha há mais tempo sem enviar. Respostas dentro de conversas têm prioridade e não dependem da janela.
 9. **Regras por roteiro, sem IA.** Classificador por regras (`automation/classifier.ts`) com prioridade para recusa, autorização apenas curta e inequívoca, detecção de respostas automáticas e encaminhamento ao humano na dúvida.
 10. **Fronteira de acesso sem login.** `Host` e `Origin` permitidos, cabeçalho `X-Aero-Request` obrigatório em escrita, CORS restrito; webhook isolado e assinado. Remoto apenas pela tailnet (ver [vps-tailscale.md](vps-tailscale.md)).

@@ -1,12 +1,3 @@
-// Correção aplicada ao WA-AKG (commit fixado) durante o build da imagem.
-//
-// Bug: o mapa de status do gateway está deslocado em relação ao Baileys
-// (proto.WebMessageInfo.Status: ERROR=0, PENDING=1, SERVER_ACK=2,
-// DELIVERY_ACK=3, READ=4, PLAYED=5). O original traduz 2→DELIVERED e
-// 3→READ, ou seja, marca "lida" quando a mensagem apenas chegou ao aparelho.
-//
-// O patch exige o trecho original exato; se o código mudar, o build falha
-// em vez de aplicar a correção às cegas.
 const fs = require('node:fs');
 
 const LF = String.fromCharCode(10);
@@ -23,14 +14,13 @@ const original = [
   '                };',
 ].join(LF);
 const fixed = [
-  '                // [aero] mapa corrigido conforme proto.WebMessageInfo.Status do Baileys',
   '                const statusMap: Record<number, string> = {',
-  "                    0: 'PENDING', // ERROR ou atualização sem status",
+  "                    0: 'PENDING',",
   "                    1: 'PENDING',",
-  "                    2: 'SENT', // SERVER_ACK",
-  "                    3: 'DELIVERED', // DELIVERY_ACK",
+  "                    2: 'SENT',",
+  "                    3: 'DELIVERED',",
   "                    4: 'READ',",
-  "                    5: 'READ', // PLAYED",
+  "                    5: 'READ',",
   '                };',
 ].join(LF);
 

@@ -3,8 +3,6 @@
 	auto_https off
 }
 
-# Serve o frontend compilado e encaminha /api para a API na rede interna.
-# Mesma origem para frontend e API: o navegador nunca fala com outros serviços.
 :80 {
 	encode zstd gzip
 

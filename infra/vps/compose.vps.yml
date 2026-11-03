@@ -1,11 +1,3 @@
-# Sobreposição para a VPS (Hostinger) com acesso privado via Tailscale.
-#   docker compose -f docker-compose.yml -f infra/vps/compose.vps.yml up -d
-#
-# Fronteira: a única porta publicada continua em 127.0.0.1. O acesso remoto é
-# feito pelo `tailscale serve` (HTTPS dentro da tailnet) apontando para essa porta.
-# Nada fica exposto na interface pública da VPS; o firewall bloqueia o resto.
-# Ver docs/vps-tailscale.md.
-
 services:
   web:
     ports: !override
@@ -13,7 +5,6 @@ services:
 
   api:
     environment:
-      # Nome MagicDNS da VPS na tailnet, ex.: aero-vps.tailnet-xyz.ts.net
       ALLOWED_ORIGINS: https://${TS_HOSTNAME:?defina TS_HOSTNAME}
       ALLOWED_HOSTS: localhost,127.0.0.1,api,${TS_HOSTNAME}
 

@@ -1,12 +1,9 @@
-# Imagens do aero a partir do monorepo.
-#   target api  -> API Fastify e worker BullMQ (mesma imagem, comandos distintos)
-#   target web  -> frontend compilado servido pelo Caddy, com proxy para a API
-
 FROM node:24.11.0-bookworm-slim AS deps
 WORKDIR /repo
 COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/api/package.json apps/api/
+COPY apps/mcp/package.json apps/mcp/
 COPY apps/web/package.json apps/web/
 RUN npm ci --no-audit --no-fund
 
@@ -22,6 +19,7 @@ WORKDIR /repo
 COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/api/package.json apps/api/
+COPY apps/mcp/package.json apps/mcp/
 COPY apps/web/package.json apps/web/
 RUN npm ci --omit=dev --no-audit --no-fund -w @aero/api -w @aero/shared --include-workspace-root=false
 

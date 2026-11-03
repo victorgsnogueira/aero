@@ -16,7 +16,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/api/**/*.ts', 'packages/shared/**/*.ts'],
+    files: ['apps/api/**/*.ts', 'apps/mcp/**/*.ts', 'packages/shared/**/*.ts'],
     languageOptions: { globals: globals.node },
   },
   {
@@ -29,7 +29,7 @@ export default tseslint.config(
     },
   },
   {
-    // Ponto de entrada: declara rotas e páginas lazy, não exporta componentes.
+
     files: ['apps/web/src/main.tsx'],
     rules: { 'react-refresh/only-export-components': 'off' },
   },

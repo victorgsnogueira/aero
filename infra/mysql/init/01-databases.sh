@@ -1,8 +1,4 @@
 #!/bin/bash
-# Executado apenas na primeira inicialização do volume do MySQL.
-# Cria dois bancos lógicos separados, cada um com credenciais próprias:
-#   aero        -> dados e migrations do aero
-#   wa_gateway  -> dados Prisma do WA-AKG (sessões, credenciais Baileys)
 set -euo pipefail
 
 : "${AERO_DB_PASSWORD:?}"

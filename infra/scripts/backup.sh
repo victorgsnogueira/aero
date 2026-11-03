@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
-# Backup do aero: bancos (aero + wa_gateway, que guarda a sessão/credenciais do
-# WhatsApp) e volumes com arquivos (anexos do aero e mídias do gateway).
-#   bash infra/scripts/backup.sh [diretório-de-destino]
-# Gera backups/<data>/ com dumps .sql.gz, .tgz dos volumes, manifesto e checksums.
-# Os arquivos contêm DADOS PESSOAIS e a sessão do WhatsApp: guarde-os cifrados.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 PROJECT="${COMPOSE_PROJECT_NAME:-aero}"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 DEST="${1:-backups/$STAMP}"
-TAR_IMAGE="caddy:2.10.2-alpine" # imagem já usada pelo projeto (contém tar)
+TAR_IMAGE="caddy:2.10.2-alpine"
 mkdir -p "$DEST"
 chmod 700 "$DEST" || true
 

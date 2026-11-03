@@ -1,6 +1,3 @@
-# Sobreposição para desenvolvimento: publica serviços de apoio SOMENTE em
-# 127.0.0.1 para que API (npm run dev:api), worker e Vite rodem no host.
-#   docker compose -f docker-compose.yml -f compose.dev.yml up -d mysql redis scraper wa-gateway
 services:
   mysql:
     ports: ["127.0.0.1:3307:3306"]

@@ -1,6 +1,3 @@
-// Provisionamento do gateway: garante um usuário SUPERADMIN técnico cuja chave
-// de API (X-API-Key) é a configurada em AERO_API_KEY. Executado no container do
-// gateway, contra o banco do próprio gateway. Nada de regra comercial aqui.
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 

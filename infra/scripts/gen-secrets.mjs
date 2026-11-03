@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Cria `.env` a partir de `.env.example`, preenchendo segredos vazios com
-// valores aleatórios. Não sobrescreve valores já definidos. Não imprime segredos.
+
 import { randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -38,7 +37,6 @@ let out = source
   })
   .join('\n');
 
-// URLs de desenvolvimento usam as senhas geradas
 const get = (k) => generated[k] ?? (new RegExp(`^${k}=(.*)$`, 'm').exec(out)?.[1] ?? '');
 out = out
   .replace(/^DATABASE_URL=mysql:\/\/aero:CHANGE_ME@/m, `DATABASE_URL=mysql://aero:${get('AERO_DB_PASSWORD')}@`)

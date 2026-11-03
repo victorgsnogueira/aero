@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Restauração de um backup gerado por backup.sh.
-#   bash infra/scripts/restore.sh <diretório> --verify   # restaura em bancos temporários, compara e descarta
-#   bash infra/scripts/restore.sh <diretório> --apply    # SUBSTITUI os dados atuais (pede confirmação)
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 

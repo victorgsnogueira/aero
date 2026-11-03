@@ -30,12 +30,11 @@ jobs:
           --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci-root --silent"
           --health-interval=5s --health-timeout=5s --health-retries=30
     env:
-      # Banco descartável do runner; nenhuma integração externa é chamada nos testes.
       TEST_DATABASE_URL: mysql://aero:ci-aero@127.0.0.1:3306/aero_test
       DATABASE_URL: mysql://aero:ci-aero@127.0.0.1:3306/aero
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 24.11.0
           cache: npm
@@ -51,32 +50,30 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-      pull-requests: write # comentário de resumo e comentários nas linhas do PR
-      statuses: write # status do commit com a contagem de erros/avisos
+      pull-requests: write
+      statuses: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          fetch-depth: 0 # necessário para o escopo "changed" comparar com a base
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 24.11.0
           cache: npm
       - run: npm ci
-      # Execução completa com a versão fixada no lockfile; falha o job em diagnósticos de erro.
       - name: React Doctor (projeto completo)
         working-directory: apps/web
         run: npx react-doctor . --no-telemetry --no-color --verbose --blocking error --json --json-out ../../react-doctor-report.json || (cat ../../react-doctor-report.json | head -c 20000; exit 1)
       - name: Relatório do React Doctor
         if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: react-doctor-report
           path: react-doctor-report.json
           if-no-files-found: ignore
-      # Em pull requests: comentários com os problemas introduzidos pela mudança.
       - name: React Doctor (comentários no PR)
         if: github.event_name == 'pull_request'
-        uses: millionco/react-doctor@695e46eee203a5d1855020191aa7e9c010a1250e # v2.4.0
+        uses: millionco/react-doctor@695e46eee203a5d1855020191aa7e9c010a1250e
         with:
           directory: apps/web
           version: '0.9.18'
@@ -88,7 +85,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Imagens da API/worker e do frontend
         run: |
           docker build --target api -t aero/api:ci .

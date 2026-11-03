@@ -4,7 +4,7 @@ Aplicação pessoal para prospecção de empresas, campanhas comerciais, atendim
 
 Fluxo: **captação** (Google Maps Scraper) → **validação** de WhatsApp (WA-AKG) → **campanhas** → **mensagens e qualificação** → **atendimento humano** → **oportunidades, propostas e pagamentos** → **indicadores**.
 
-> Coletar ou validar contatos **nunca** envia mensagens. O envio só ocorre ao ativar uma campanha, para contatos elegíveis, e depende de `SENDING_ENABLED=true`.
+> Coletar ou validar contatos **nunca** envia mensagens. Envios ocorrem ao ativar campanha ou solicitar envio manual, respeitando elegibilidade e `SENDING_ENABLED=true`.
 
 ## Iniciar a partir de um clone limpo (Docker)
 
@@ -72,6 +72,7 @@ assets/brand    Logotipo aprovado (versões preta e branca, PNG/SVG/favicon forn
 ## Documentação
 
 - [Arquitetura, decisões e versões](docs/arquitetura.md)
+- [Operar pelo chat com MCP: configuração, ferramentas e exemplos](docs/mcp.md)
 - [Operação: WhatsApp, scraper, envio, diagnóstico e recuperação](docs/operacao.md)
 - [Backup, restauração e migração](docs/backup-restauracao.md)
 - [VPS da Hostinger com Tailscale](docs/vps-tailscale.md)

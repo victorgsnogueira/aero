@@ -1,13 +1,4 @@
-# WA-AKG (gateway WhatsApp baseado em Baileys) construído a partir de um commit fixado.
-# Diferenças em relação ao Dockerfile original do projeto:
-# - Node 24 LTS (bookworm-slim) em vez de node:26-alpine;
-# - sem credenciais/admin padrão: o provisionamento usa variáveis obrigatórias;
-# - inicialização própria (entrypoint.sh) que provisiona a chave de API do aero;
-# - Swagger público desabilitado e nenhuma porta publicada pelo compose base;
-# - correção do mapa de status de mensagens (patch-status-map.cjs).
-
 ARG WA_AKG_REPO=https://github.com/mrifqidaffaaditya/WA-AKG.git
-# v1.6.3 (estável). A 1.7.0 ainda é beta.
 ARG WA_AKG_COMMIT=627a69fc0cc24b2a1e61f67c8c820ee0bc460f0a
 
 FROM node:24.11.0-bookworm-slim AS source
@@ -29,13 +20,10 @@ COPY --from=source /src/patches ./patches/
 COPY --from=source /src/prisma ./prisma/
 RUN npm ci --legacy-peer-deps --foreground-scripts && npm cache clean --force
 COPY --from=source /src/ ./
-# Correção do mapa de status de mensagens (ver patch-status-map.cjs)
 COPY patch-status-map.cjs /tmp/patch-status-map.cjs
 RUN node /tmp/patch-status-map.cjs src/modules/whatsapp/store/index.ts
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate && npm run build
-# Sem `npm prune`: no npm atual ele falha com o opcional @tailwindcss/oxide-wasm32-wasi.
-# Mantemos as dependências completas (inclui tsx e prisma CLI necessários em runtime).
 RUN test -x node_modules/.bin/tsx && test -x node_modules/.bin/prisma
 
 FROM node:24.11.0-bookworm-slim AS runner
