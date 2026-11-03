@@ -1,9 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { LiveEvent } from '../../core/events.ts';
 
-// Server-Sent Events: sinais de atualização para a interface (TanStack Query
-// invalida as consultas afetadas). Sem dados sensíveis no fluxo — apenas IDs.
-// Uma única assinatura Redis é compartilhada por todos os clientes conectados.
 export const eventsRoutes: FastifyPluginAsync = async (app) => {
   const clients = new Set<(evt: LiveEvent) => void>();
   let unsubscribe: (() => Promise<void>) | null = null;
@@ -17,7 +14,7 @@ export const eventsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.get('/', { schema: { hide: true } }, async (req, reply) => {
-    // A resposta passa a ser escrita diretamente no socket (fluxo contínuo).
+
     reply.hijack();
     reply.raw.writeHead(200, {
       'content-type': 'text/event-stream; charset=utf-8',

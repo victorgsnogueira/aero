@@ -4,9 +4,6 @@ import { campaignContacts, conversations, phones, suppressions } from '../../db/
 import { ACTIVE_PARTICIPATION_STATUSES } from '@aero/shared';
 import { isValidationCurrent } from '../validation/service.ts';
 
-// Regras de elegibilidade para a PRIMEIRA abordagem de um telefone em uma campanha.
-// Avaliadas na seleção, na ativação e novamente imediatamente antes do envio.
-
 export type IneligibleReason =
   | 'invalid_format'
   | 'validation_pending'
@@ -30,7 +27,6 @@ export const INELIGIBLE_LABELS: Record<IneligibleReason, string> = {
   not_in_allowlist: 'Fora da lista de teste (SEND_ALLOWLIST)',
 };
 
-/** Motivos que podem se resolver sozinhos (o contato continua selecionado). */
 export const TRANSIENT_REASONS: IneligibleReason[] = ['validation_pending', 'validation_stale', 'validation_inconclusive'];
 
 export interface EligibilityInput {
@@ -84,7 +80,6 @@ export async function checkEligibility(db: DbOrTx, input: EligibilityInput): Pro
   return reasons;
 }
 
-/** Contagem de sobreposição: telefones da campanha que também estão em outras campanhas. */
 export async function overlapCount(db: DbOrTx, campaignId: number): Promise<number> {
   const [rows] = await db.execute(sql`
     SELECT COUNT(DISTINCT cc.phone_id) AS n FROM campaign_contacts cc

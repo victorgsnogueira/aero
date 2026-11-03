@@ -6,14 +6,6 @@ import { HttpError } from '../../lib/http.ts';
 import { getSessionKey } from '../whatsapp/session.ts';
 import type { WaStatus } from '@aero/shared';
 
-// Validação de existência de conta WhatsApp pelo WA-AKG.
-// Regras:
-//  - Somente números com formato válido (E.164) são consultados.
-//  - Falha de rede, timeout, sessão indisponível ou erro do gateway => "inconclusivo",
-//    nunca "não encontrado".
-//  - Resultados conclusivos recentes (dentro do prazo de revalidação) são reutilizados.
-//  - Existência de conta NÃO comprova identidade da empresa nem entrega de mensagem.
-
 export type ValidationScope =
   | { kind: 'scan'; scanId: number }
   | { kind: 'campaign'; campaignId: number }
@@ -29,7 +21,6 @@ export interface ValidationRunResult {
   stoppedReason: string | null;
 }
 
-/** Fila de candidatos à validação para um escopo, em ordem estável. */
 const INCONCLUSIVE_RETRY_MS = 15 * 60_000;
 
 async function candidates(ctx: AppContext, scope: ValidationScope, revalidateBefore: Date, limit: number): Promise<{ id: number; e164: string }[]> {
@@ -57,7 +48,7 @@ async function candidates(ctx: AppContext, scope: ValidationScope, revalidateBef
       if (scope.phoneIds.length === 0) return [];
       rows = await ctx.db.execute(sql`
         SELECT p.id, p.e164 FROM phones p
-        WHERE p.id IN (${sql.join(scope.phoneIds.map((i) => sql`${i}`), sql`,`)}) AND p.format_status = 'valid' AND p.e164 IS NOT NULL
+        WHERE p.id IN (${sql.join(scope.phoneIds.map((i) => sql`${i}`), sql`,`)}) AND p.format_status = 'valid' AND p.e164 IS NOT NULL AND ${needs}
         ORDER BY p.id LIMIT ${limit}`);
       break;
     case 'stale':
@@ -78,10 +69,6 @@ async function markInconclusive(ctx: AppContext, ids: number[], error: string): 
     .where(inArray(phones.id, ids));
 }
 
-/**
- * Executa até `maxBatches` lotes. Para antes se a sessão estiver indisponível
- * (deixa os números como estão) ou se `shouldStop` indicar meta atingida.
- */
 export async function runValidation(
   ctx: AppContext,
   scope: ValidationScope,
@@ -151,7 +138,6 @@ export async function runValidation(
   return result;
 }
 
-/** Validação vigente: conclusiva, encontrada e dentro do prazo. */
 export function isValidationCurrent(p: { waStatus: WaStatus; waCheckedAt: Date | null }, revalidateDays: number, now: Date): boolean {
   if (p.waStatus !== 'found' || !p.waCheckedAt) return false;
   return now.getTime() - p.waCheckedAt.getTime() <= revalidateDays * 86400_000;

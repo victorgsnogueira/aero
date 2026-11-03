@@ -53,8 +53,6 @@ export const offersRoutes: FastifyPluginAsyncTypebox = async (app) => {
     return reply.code(201).send(present(await getOffer(db, id)));
   });
 
-  // Editar a oferta não altera o que já foi apresentado: campanhas, oportunidades e
-  // propostas guardam uma cópia (snapshot) no momento da apresentação.
   app.put('/:id', { schema: { tags: ['offers'], params: IdParams, body: OfferBody, response: { 200: OfferSchema } } }, async (req) => {
     await getOffer(db, req.params.id);
     validateOfferPricing(req.body);

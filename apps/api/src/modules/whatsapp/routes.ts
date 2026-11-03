@@ -28,7 +28,6 @@ export const whatsappRoutes: FastifyPluginAsyncTypebox = async (app) => {
 
   app.get('/session', { schema: { tags: ['whatsapp'], response: { 200: SessionSchema } } }, async () => present(await syncSessionStatus(ctx)));
 
-  /** Cria a sessão no gateway, desativa o bot embutido e registra o webhook. */
   app.post('/session/provision', { schema: { tags: ['whatsapp'], response: { 200: SessionSchema } } }, async () => {
     const row = await provisionSession(ctx);
     await audit(ctx.db, 'owner', 'wa.provision', 'wa_session', row.id);
@@ -41,7 +40,7 @@ export const whatsappRoutes: FastifyPluginAsyncTypebox = async (app) => {
     async (_req, reply) => {
       reply.header('cache-control', 'no-store');
       const qr = await ctx.wa.getQr(getSessionKey(ctx));
-      // Somente a imagem (data URL) vai ao navegador; nunca credenciais.
+
       return { image: qr.image, reason: qr.reason };
     },
   );

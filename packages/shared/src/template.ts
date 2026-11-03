@@ -1,6 +1,3 @@
-// Renderização de modelos de mensagem. Usada pela prévia na interface e pelo
-// worker no momento de agendar o envio, garantindo o mesmo resultado nos dois lados.
-
 export const TEMPLATE_VARIABLES = {
   remetente_nome: 'Seu nome (Configurações)',
   remetente_empresa: 'Nome da sua empresa (Configurações)',
@@ -20,9 +17,9 @@ const VARIABLE_RE = /\{\{\s*([a-z_]+)\s*\}\}/g;
 
 export interface RenderResult {
   text: string;
-  /** Variáveis presentes no modelo e sem valor disponível. */
+
   missing: string[];
-  /** Variáveis usadas no modelo que não existem. */
+
   unknown: string[];
 }
 

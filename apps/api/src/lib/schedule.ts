@@ -1,12 +1,9 @@
-// Cálculo de janelas de envio em um fuso horário explícito da campanha.
-// O relógio/fuso do computador não altera o agendamento: tudo parte de UTC.
-
 export interface SendWindow {
   timezone: string;
-  /** Dias permitidos: 0 = domingo ... 6 = sábado. */
+
   days: number[];
-  start: string; // HH:mm
-  end: string; // HH:mm
+  start: string;
+  end: string;
 }
 
 interface LocalParts {
@@ -63,28 +60,23 @@ export function isWithinWindow(date: Date, w: SendWindow): boolean {
   return minutes >= toMinutes(w.start) && minutes < toMinutes(w.end);
 }
 
-/**
- * Próximo instante (UTC) dentro da janela, a partir de `from`.
- * Varre em passos de 1 minuto até o próximo início de janela (máx. 8 dias).
- */
 export function nextWindowStart(from: Date, w: SendWindow): Date | null {
   if (isWithinWindow(from, w)) return from;
   const startMin = toMinutes(w.start);
-  // Avança até o próximo minuto exato de início, testando cada dia
+
   let cursor = new Date(Math.ceil(from.getTime() / 60000) * 60000);
   const limit = from.getTime() + 8 * 24 * 3600 * 1000;
   while (cursor.getTime() < limit) {
     const p = localParts(cursor, w.timezone);
     const minutes = p.hour * 60 + p.minute;
     if (w.days.includes(p.weekday) && minutes >= startMin && minutes < toMinutes(w.end)) return cursor;
-    // salto: se antes do início no mesmo dia, pula direto até o início
+
     const jump = minutes < startMin ? startMin - minutes : 24 * 60 - minutes + startMin;
     cursor = new Date(cursor.getTime() + Math.max(1, jump) * 60000);
   }
   return null;
 }
 
-/** Início do dia local (00:00) de `date` no fuso, expresso em UTC — usado para limites diários. */
 export function startOfLocalDay(date: Date, timezone: string): Date {
   const p = localParts(date, timezone);
   const minutesSinceMidnight = p.hour * 60 + p.minute;

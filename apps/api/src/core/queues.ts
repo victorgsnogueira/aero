@@ -1,6 +1,5 @@
 import { Queue, type ConnectionOptions } from 'bullmq';
 
-// Filas BullMQ. Toda tarefa carrega apenas IDs; o estado de verdade fica no MySQL.
 export const QUEUES = {
   scans: 'aero-scans',
   validation: 'aero-validation',
@@ -11,7 +10,6 @@ export const QUEUES = {
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
-/** Tópicos do outbox -> fila + nome do job. */
 export const TOPICS = {
   'scan.tick': QUEUES.scans,
   'validation.run': QUEUES.validation,

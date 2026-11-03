@@ -1,8 +1,5 @@
 import { parse } from 'csv-parse/sync';
 
-// Conversão do CSV do scraper (36 colunas, ver gmaps/entry.go CsvHeaders) para
-// uma estrutura interna. Campos complexos chegam como JSON serializado.
-
 export interface ScrapedAddress {
   borough: string | null;
   street: string | null;
@@ -64,7 +61,6 @@ function parseAddress(v: string | undefined): ScrapedAddress | null {
   }
 }
 
-/** Coordenada utilizável: numérica, dentro dos limites e diferente de (0,0). */
 export function usableCoordinate(lat: number | null, lng: number | null): boolean {
   if (lat === null || lng === null) return false;
   if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return false;

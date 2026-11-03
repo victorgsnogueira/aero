@@ -1,8 +1,5 @@
 import { Redis } from 'ioredis';
 
-// Notificações em tempo real (worker -> API -> navegador via SSE).
-// São apenas sinais de invalidação; a interface sempre relê o estado pela API.
-
 export const EVENTS_CHANNEL = 'aero:events';
 
 export type LiveEvent =
@@ -29,7 +26,7 @@ export function createEventBus(redisUrl: string): EventBus {
         if (pub.status === 'wait') await pub.connect();
         await pub.publish(EVENTS_CHANNEL, JSON.stringify(evt));
       } catch {
-        // Notificação perdida não compromete dados: a interface também atualiza periodicamente.
+        return;
       }
     },
     async subscribe(handler) {
@@ -40,7 +37,7 @@ export function createEventBus(redisUrl: string): EventBus {
         try {
           handler(JSON.parse(msg) as LiveEvent);
         } catch {
-          /* ignora mensagem malformada */
+          return;
         }
       });
       return async () => {
@@ -53,7 +50,6 @@ export function createEventBus(redisUrl: string): EventBus {
   };
 }
 
-/** Implementação nula para testes. */
 export function createMemoryEventBus(): EventBus & { published: LiveEvent[] } {
   const handlers = new Set<(e: LiveEvent) => void>();
   const published: LiveEvent[] = [];

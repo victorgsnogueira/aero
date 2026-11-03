@@ -33,12 +33,6 @@ import {
   WA_STATUSES,
 } from '@aero/shared';
 
-// Convenções:
-// - IDs: BIGINT UNSIGNED auto incremento.
-// - Datas: DATETIME(3) sempre em UTC (a conexão usa timezone 'Z').
-// - Dinheiro: BIGINT em centavos + coluna de moeda. Nunca float.
-// - Dados vindos da fonte externa ficam preservados em `raw`.
-
 const id = () => bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey();
 const ref = (name: string) => bigint(name, { mode: 'number', unsigned: true });
 const ts = (name: string) => datetime(name, { mode: 'date', fsp: 3 });
@@ -68,9 +62,6 @@ export type OfferSnapshot = {
 
 export type QualificationQuestion = { key: string; text: string };
 
-// ---------------------------------------------------------------------------
-// Configuração da operação (registro único, id = 1)
-// ---------------------------------------------------------------------------
 export const operatorSettings = mysqlTable('operator_settings', {
   id: int('id').primaryKey(),
   senderName: varchar('sender_name', { length: 120 }),
@@ -78,23 +69,20 @@ export const operatorSettings = mysqlTable('operator_settings', {
   introduction: text('introduction'),
   defaultTimezone: varchar('default_timezone', { length: 64 }).notNull().default('America/Sao_Paulo'),
   defaultCountry: varchar('default_country', { length: 2 }).notNull().default('BR'),
-  // Limites globais da sessão (compartilhados por todas as campanhas)
+
   sendMinIntervalSeconds: int('send_min_interval_seconds').notNull().default(90),
   sendDailyLimit: int('send_daily_limit').notNull().default(40),
   sendHourlyLimit: int('send_hourly_limit').notNull().default(12),
-  // Validação de WhatsApp
+
   validationRevalidateDays: int('validation_revalidate_days').notNull().default(30),
   validationBatchSize: int('validation_batch_size').notNull().default(10),
   validationMinIntervalMs: int('validation_min_interval_ms').notNull().default(4000),
-  // Coleta
+
   scanDefaultDepth: int('scan_default_depth').notNull().default(10),
   scanUnitMaxSeconds: int('scan_unit_max_seconds').notNull().default(600),
   updatedAt: updatedAt(),
 });
 
-// ---------------------------------------------------------------------------
-// Ofertas
-// ---------------------------------------------------------------------------
 export const offers = mysqlTable('offers', {
   id: id(),
   service: mysqlEnum('service', SERVICES).notNull(),
@@ -113,9 +101,6 @@ export const offers = mysqlTable('offers', {
   updatedAt: updatedAt(),
 });
 
-// ---------------------------------------------------------------------------
-// Empresas, telefones e coleta
-// ---------------------------------------------------------------------------
 export const companies = mysqlTable(
   'companies',
   {
@@ -163,9 +148,9 @@ export const phones = mysqlTable(
   'phones',
   {
     id: id(),
-    /** Número normalizado em E.164; nulo quando não foi possível normalizar com segurança. */
+
     e164: varchar('e164', { length: 20 }),
-    /** Chave única: E.164 quando válido, ou `raw:<país>:<dígitos>` para revisão. */
+
     dedupeKey: varchar('dedupe_key', { length: 64 }).notNull(),
     rawSample: varchar('raw_sample', { length: 64 }).notNull(),
     countryCode: varchar('country_code', { length: 2 }),
@@ -201,7 +186,6 @@ export const companyPhones = mysqlTable(
   (t) => [uniqueIndex('company_phones_uq').on(t.companyId, t.phoneId), index('company_phones_phone_idx').on(t.phoneId)],
 );
 
-/** Supressão persistente: recusas e descadastros valem para novas campanhas e importações. */
 export const suppressions = mysqlTable(
   'suppressions',
   {
@@ -243,7 +227,7 @@ export const scans = mysqlTable(
     status: mysqlEnum('status', SCAN_STATUSES).notNull().default('draft'),
     statusReason: varchar('status_reason', { length: 512 }),
     lastError: text('last_error'),
-    // Contadores (recalculados a partir de scan_results / unidades)
+
     placesFound: int('places_found').notNull().default(0),
     phonesFound: int('phones_found').notNull().default(0),
     newRecords: int('new_records').notNull().default(0),
@@ -283,7 +267,6 @@ export const scanUnits = mysqlTable(
   (t) => [uniqueIndex('scan_units_seq_uq').on(t.scanId, t.seq), index('scan_units_status_idx').on(t.status)],
 );
 
-/** Registro das consultas executadas, para reduzir repetição entre varreduras. */
 export const scanQueryLog = mysqlTable(
   'scan_query_log',
   {
@@ -294,14 +277,13 @@ export const scanQueryLog = mysqlTable(
     depth: int('depth').notNull(),
     scanUnitId: ref('scan_unit_id').notNull(),
     placesFound: int('places_found').notNull().default(0),
-    /** Empresas encontradas pela consulta (permite reaproveitar sem nova coleta). */
+
     companyIds: json('company_ids').$type<number[]>(),
     executedAt: createdAt(),
   },
   (t) => [index('scan_query_log_hash_idx').on(t.queryHash, t.executedAt)],
 );
 
-/** Ocorrência de uma empresa em uma varredura. */
 export const scanResults = mysqlTable(
   'scan_results',
   {
@@ -310,7 +292,7 @@ export const scanResults = mysqlTable(
     scanUnitId: ref('scan_unit_id').notNull(),
     companyId: ref('company_id').notNull(),
     isNew: boolean('is_new').notNull(),
-    /** Excedente: coletado após a meta ser atingida. Preservado, mas fora da contagem da meta. */
+
     isSurplus: boolean('is_surplus').notNull().default(false),
     countsTowardTarget: boolean('counts_toward_target').notNull().default(false),
     createdAt: createdAt(),
@@ -318,9 +300,6 @@ export const scanResults = mysqlTable(
   (t) => [uniqueIndex('scan_results_uq').on(t.scanId, t.companyId), index('scan_results_company_idx').on(t.companyId)],
 );
 
-// ---------------------------------------------------------------------------
-// Sessão do WhatsApp (uma, mas modelada como registro)
-// ---------------------------------------------------------------------------
 export const waSessions = mysqlTable('wa_sessions', {
   id: id(),
   sessionKey: varchar('session_key', { length: 64 }).notNull().unique(),
@@ -334,9 +313,6 @@ export const waSessions = mysqlTable('wa_sessions', {
   updatedAt: updatedAt(),
 });
 
-// ---------------------------------------------------------------------------
-// Campanhas
-// ---------------------------------------------------------------------------
 export const campaigns = mysqlTable(
   'campaigns',
   {
@@ -411,9 +387,6 @@ export const campaignContactEvents = mysqlTable(
   (t) => [index('cce_cc_idx').on(t.campaignContactId)],
 );
 
-// ---------------------------------------------------------------------------
-// Conversas e mensagens
-// ---------------------------------------------------------------------------
 export const conversations = mysqlTable(
   'conversations',
   {
@@ -432,7 +405,7 @@ export const conversations = mysqlTable(
     nextAction: varchar('next_action', { length: 255 }),
     nextActionDueAt: ts('next_action_due_at'),
     notes: text('notes'),
-    /** Versão para controle otimista entre worker, webhook e ações manuais. */
+
     version: int('version').notNull().default(0),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -483,7 +456,6 @@ export const messages = mysqlTable(
   ],
 );
 
-/** Eventos de webhook persistidos e deduplicados antes de qualquer efeito. */
 export const webhookEvents = mysqlTable(
   'webhook_events',
   {
@@ -500,7 +472,6 @@ export const webhookEvents = mysqlTable(
   (t) => [uniqueIndex('webhook_events_key_uq').on(t.source, t.eventKey), index('webhook_events_pending_idx').on(t.processedAt)],
 );
 
-/** Outbox transacional: intenção registrada junto da mudança de negócio e publicada depois na fila. */
 export const outbox = mysqlTable(
   'outbox',
   {
@@ -517,9 +488,6 @@ export const outbox = mysqlTable(
   (t) => [index('outbox_pending_idx').on(t.publishedAt, t.availableAt), uniqueIndex('outbox_dedupe_uq').on(t.dedupeKey)],
 );
 
-// ---------------------------------------------------------------------------
-// Oportunidades, propostas e pagamentos
-// ---------------------------------------------------------------------------
 export const opportunities = mysqlTable(
   'opportunities',
   {
@@ -604,9 +572,6 @@ export const payments = mysqlTable(
   (t) => [index('payments_proposal_idx').on(t.proposalId)],
 );
 
-// ---------------------------------------------------------------------------
-// Auditoria
-// ---------------------------------------------------------------------------
 export const auditLog = mysqlTable(
   'audit_log',
   {

@@ -1,14 +1,5 @@
 import { requestJson } from '../../lib/http.ts';
 
-// Adaptador do gosom/google-maps-scraper v1.18.1 (modo `-web`).
-// Contrato verificado no código-fonte (web/web.go, web/job.go):
-//   POST   /api/v1/jobs               {Name, keywords[], lang(2), depth, max_time(s), ...} -> 201 {id}
-//   GET    /api/v1/jobs/{id}          -> {ID, Name, Date, Status: pending|working|ok|failed, Data}
-//   GET    /api/v1/jobs/{id}/download -> CSV (arquivo escrito incrementalmente durante a execução)
-//   DELETE /api/v1/jobs/{id}          -> remove registro e CSV (NÃO interrompe um job em execução)
-// Limitações: os jobs são executados um por vez; não há limite exato de itens por
-// job (controlado indiretamente por `depth` e `max_time`, mínimo efetivo de 180s).
-
 export type ScraperJobStatus = 'pending' | 'working' | 'ok' | 'failed';
 
 export interface ScraperJob {

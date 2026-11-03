@@ -10,10 +10,12 @@
   "workspaces": [
     "packages/shared",
     "apps/api",
+    "apps/mcp",
     "apps/web"
   ],
   "scripts": {
     "dev:api": "npm run dev -w @aero/api",
+    "start:mcp": "npm run start -w @aero/mcp",
     "dev:worker": "npm run dev:worker -w @aero/api",
     "dev:web": "npm run dev -w @aero/web",
     "db:generate": "npm run db:generate -w @aero/api",

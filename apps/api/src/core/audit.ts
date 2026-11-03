@@ -3,7 +3,6 @@ import { auditLog } from '../db/schema.ts';
 
 export type Actor = 'owner' | 'system' | 'contact';
 
-/** Auditoria das ações comerciais relevantes. Não registra conteúdo de mensagens nem segredos. */
 export async function audit(
   tx: DbOrTx,
   actor: Actor,

@@ -1,13 +1,15 @@
 import { Type, type FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
-import { and, eq, isNull, sql } from 'drizzle-orm';
-import { PHONE_FORMAT_STATUSES, WA_STATUSES } from '@aero/shared';
-import { companies, phones, suppressions } from '../../db/schema.ts';
+import { eq, sql } from 'drizzle-orm';
+import { LEAD_SORT_FIELDS, PHONE_FORMAT_STATUSES, WA_STATUSES } from '@aero/shared';
+import { companies, phones } from '../../db/schema.ts';
 import { Merge, IdParams, Nullable, Pagination, StringEnum, pageArgs } from '../../lib/schemas.ts';
 import { notFound } from '../../core/errors.ts';
 import { audit } from '../../core/audit.ts';
 import { enqueue } from '../../core/outbox.ts';
-import { leadWhere, PRIMARY_PHONE, type LeadFilters } from './queries.ts';
-import { suppressPhone } from './suppression.ts';
+import { leadOrder, leadWhere, PRIMARY_PHONE, type LeadFilters } from './queries.ts';
+import { liftManualSuppression, suppressPhone } from './suppression.ts';
+import { CompanyCreate, CompanyPatch } from './input.ts';
+import { addCompanyPhone, createCompany, updateCompany } from './service.ts';
 
 const LeadFilterQuery = Type.Object({
   q: Type.Optional(Type.String({ maxLength: 120 })),
@@ -92,21 +94,34 @@ const LEAD_SELECT = sql`
 export const leadsRoutes: FastifyPluginAsyncTypebox = async (app) => {
   const { db } = app.ctx;
 
+  app.post('/', { schema: { tags: ['leads'], body: CompanyCreate, response: { 201: Type.Object({ id: Type.Integer() }) } } }, async (req, reply) => {
+    const result = await db.transaction((tx) => createCompany(tx, req.body, app.ctx.now()));
+    return reply.code(201).send(result);
+  });
+
+  app.post('/:id/phones', { schema: { tags: ['leads'], params: IdParams, body: Type.Object({ phone: Type.String({ minLength: 1, maxLength: 64, pattern: '\\S' }), countryCode: Type.Optional(Nullable(Type.String({ pattern: '^[A-Z]{2}$' }))) }) } }, async (req) => {
+    return db.transaction(async (tx) => {
+      const [company] = await tx.select().from(companies).where(eq(companies.id, req.params.id)).for('update');
+      if (!company) throw notFound('Empresa');
+      return addCompanyPhone(tx, company.id, req.body.phone, req.body.countryCode !== undefined ? req.body.countryCode : company.countryCode, app.ctx.now());
+    });
+  });
+
   app.get(
     '/',
     {
       schema: {
         tags: ['leads'],
-        querystring: Merge(Merge(LeadFilterQuery, Pagination), Type.Object({ sort: Type.Optional(StringEnum(['recent', 'name'] as const)) })),
+        querystring: Merge(Merge(LeadFilterQuery, Pagination), Type.Object({ sort: Type.Optional(StringEnum(LEAD_SORT_FIELDS)), direction: Type.Optional(StringEnum(['asc', 'desc'] as const)) })),
         response: { 200: Type.Object({ items: Type.Array(LeadRow), total: Type.Integer(), page: Type.Integer(), pageSize: Type.Integer() }) },
       },
     },
     async (req) => {
       const { page, pageSize, offset, limit } = pageArgs(req.query);
       const where = leadWhere(req.query as LeadFilters);
-      const order = req.query.sort === 'name' ? sql`c.name ASC` : sql`c.last_seen_at DESC, c.id DESC`;
+      const order = leadOrder(req.query.sort, req.query.direction);
       const [rowsRes, totalRes] = await Promise.all([
-        db.execute(sql`${LEAD_SELECT} WHERE ${where} ORDER BY ${order} LIMIT ${limit} OFFSET ${offset}`),
+        db.execute(sql`SELECT * FROM (${LEAD_SELECT} WHERE ${where}) AS l ORDER BY ${order} LIMIT ${limit} OFFSET ${offset}`),
         db.execute(sql`SELECT COUNT(*) AS n FROM companies c WHERE ${where}`),
       ]);
       const rows = rowsRes[0] as unknown as RawLead[];
@@ -115,14 +130,13 @@ export const leadsRoutes: FastifyPluginAsyncTypebox = async (app) => {
     },
   );
 
-  /** Exportação CSV (mesmos filtros da lista). Contém dados pessoais: uso do proprietário. */
   app.get('/export.csv', { schema: { tags: ['leads'], querystring: LeadFilterQuery } }, async (req, reply) => {
     const where = leadWhere(req.query as LeadFilters);
     const [rows] = await db.execute(sql`${LEAD_SELECT} WHERE ${where} ORDER BY c.id LIMIT 50000`);
     const header = ['id', 'empresa', 'categoria', 'cidade', 'estado', 'pais', 'telefone_e164', 'telefone_original', 'formato', 'whatsapp', 'whatsapp_verificado_em', 'bloqueado', 'latitude', 'longitude'];
     const esc = (v: unknown) => {
       const s = v === null || v === undefined ? '' : String(v);
-      // Neutraliza fórmulas ao abrir em planilhas
+
       const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
       return /[",\n;]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
     };
@@ -153,8 +167,6 @@ export const leadsRoutes: FastifyPluginAsyncTypebox = async (app) => {
     },
   );
 
-  // Pontos do mapa: somente na área visível e com coordenadas coletadas pelo scraper.
-  // Acima de um limite, agrega em grade no servidor (o cliente agrupa o restante).
   app.get(
     '/map',
     {
@@ -182,7 +194,7 @@ export const leadsRoutes: FastifyPluginAsyncTypebox = async (app) => {
     async (req) => {
       const { west, south, east, north, zoom, ...filters } = req.query;
       const where = leadWhere({ ...(filters as LeadFilters), hasCoords: undefined });
-      // Caixa que cruza o antimeridiano
+
       const lngCond = west <= east ? sql`c.longitude BETWEEN ${west} AND ${east}` : sql`(c.longitude >= ${west} OR c.longitude <= ${east})`;
       const bbox = sql`c.latitude IS NOT NULL AND c.longitude IS NOT NULL AND c.latitude BETWEEN ${south} AND ${north} AND ${lngCond}`;
       const [[countRow], [noCoords]] = await Promise.all([
@@ -208,7 +220,7 @@ export const leadsRoutes: FastifyPluginAsyncTypebox = async (app) => {
         }));
         return { mode: 'points' as const, total, withoutCoords, points, cells: [] };
       }
-      // Grade proporcional ao zoom
+
       const cell = Math.max(0.0005, 360 / Math.pow(2, Math.floor(zoom) + 6));
       const [cells] = await db.execute(sql`
         SELECT AVG(c.latitude) AS lat, AVG(c.longitude) AS lng, COUNT(*) AS n
@@ -261,10 +273,9 @@ export const leadsRoutes: FastifyPluginAsyncTypebox = async (app) => {
 
   app.patch(
     '/:id',
-    { schema: { tags: ['leads'], params: IdParams, body: Type.Object({ notes: Nullable(Type.String({ maxLength: 10000 })) }) } },
+    { schema: { tags: ['leads'], params: IdParams, body: CompanyPatch } },
     async (req) => {
-      const res = await db.update(companies).set({ notes: req.body.notes }).where(eq(companies.id, req.params.id));
-      if ((res[0] as { affectedRows: number }).affectedRows === 0) throw notFound('Empresa');
+      await db.transaction((tx) => updateCompany(tx, req.params.id, req.body));
       return { ok: true };
     },
   );
@@ -282,13 +293,7 @@ export const leadsRoutes: FastifyPluginAsyncTypebox = async (app) => {
     '/phones/:id/unsuppress',
     { schema: { tags: ['leads'], params: IdParams, body: Type.Object({ reason: Type.String({ minLength: 3, maxLength: 255 }) }) } },
     async (req) => {
-      await db.transaction(async (tx) => {
-        await tx
-          .update(suppressions)
-          .set({ liftedAt: app.ctx.now(), liftedReason: req.body.reason })
-          .where(and(eq(suppressions.phoneId, req.params.id), isNull(suppressions.liftedAt)));
-        await audit(tx, 'owner', 'phone.unsuppress', 'phone', req.params.id, { reason: req.body.reason });
-      });
+      await db.transaction((tx) => liftManualSuppression(tx, req.params.id, req.body.reason, app.ctx.now()));
       return { ok: true };
     },
   );
@@ -304,7 +309,7 @@ export const leadsRoutes: FastifyPluginAsyncTypebox = async (app) => {
     async (req) => {
       const scope = req.body.scanId ? { kind: 'scan', scanId: req.body.scanId } : { kind: 'phones', phoneIds: req.body.phoneIds ?? [] };
       if (scope.kind === 'phones' && (req.body.phoneIds ?? []).length > 0) {
-        // Revalidação manual: força nova consulta mesmo com resultado recente
+
         await db.update(phones).set({ waStatus: 'pending' }).where(sql`${phones.id} IN (${sql.join((req.body.phoneIds ?? []).map((i) => sql`${i}`), sql`,`)}) AND ${phones.formatStatus} = 'valid'`);
       }
       await db.transaction((tx) => enqueue(tx, 'validation.run', { scope }));

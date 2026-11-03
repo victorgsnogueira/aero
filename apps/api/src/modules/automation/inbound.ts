@@ -1,11 +1,12 @@
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { AppContext } from '../../core/context.ts';
 import type { Tx } from '../../db/client.ts';
 import { campaignContacts, campaigns, conversations, messages, phones, webhookEvents, waSessions } from '../../db/schema.ts';
 import type { WaWebhookPayload } from '../../integrations/wa/webhook.ts';
 import { mapSessionStatus } from '../../integrations/wa/client.ts';
-import { isLidJid, jidToE164, normalizePhone } from '../../lib/phone.ts';
+import { isLidJid, jidToE164 } from '../../lib/phone.ts';
 import { ensureConversation } from '../inbox/conversations.ts';
+import { hasCommercialContext } from '../inbox/scope.ts';
 import { ensureSessionRow, getSessionKey } from '../whatsapp/session.ts';
 import { classifyReply, type Classification } from './classifier.ts';
 import { suppressPhone } from '../leads/suppression.ts';
@@ -17,54 +18,31 @@ import { enqueue } from '../../core/outbox.ts';
 import { audit } from '../../core/audit.ts';
 import { SERVICE_LABELS, type MessageStatus } from '@aero/shared';
 
-// Processamento dos eventos do gateway (executado pelo worker).
-// Idempotência: cada evento é processado uma vez (webhook_events.processed_at) e
-// mensagens são únicas por (conversa, id externo). Eventos fora de ordem não
-// rebaixam estados (ex.: "lida" não volta para "entregue").
-
 type Data = Record<string, unknown>;
 
 const STATUS_RANK: Partial<Record<MessageStatus, number>> = { processing: 1, unknown: 1, accepted: 2, delivered: 3, read: 4 };
 
 export class RetryLater extends Error {}
 
-async function phoneForJid(tx: Tx, rawJid: string, pushName: string | null): Promise<{ id: number; jid: string; lid: string | null }> {
+async function phoneForJid(tx: Tx, rawJid: string, sessionId: number): Promise<{ id: number; jid: string; lid: string | null } | null> {
   const jid = rawJid.replace(/:\d+@/, '@');
-  // 1) JID confirmado pelo gateway na validação. Importante no Brasil: o WhatsApp
-  //    pode identificar celulares sem o nono dígito, diferente do E.164 cadastrado.
+
   const [byJid] = await tx.select({ id: phones.id }).from(phones).where(eq(phones.waJid, jid)).limit(1);
   if (byJid) return { id: byJid.id, jid, lid: isLidJid(jid) ? jid : null };
   const e164 = jidToE164(jid);
-  // 2) Mesmo número em E.164
+
   if (e164) {
     const [byE164] = await tx.select({ id: phones.id }).from(phones).where(eq(phones.e164, e164)).limit(1);
     if (byE164) return { id: byE164.id, jid, lid: null };
   }
-  if (e164) {
-    const n = normalizePhone(e164, null);
-    const key = n.e164 ?? `raw:XX:${e164.replace(/\D/g, '')}`;
-    await tx
-      .insert(phones)
-      .values({ e164: n.e164, dedupeKey: key, rawSample: e164, countryCode: n.countryCode, formatStatus: n.formatStatus, formatNote: n.note, waStatus: 'found', waJid: jid })
-      .onDuplicateKeyUpdate({ set: { waJid: sql`COALESCE(${phones.waJid}, ${jid})` } });
-    const [row] = await tx.select({ id: phones.id }).from(phones).where(eq(phones.dedupeKey, key));
-    return { id: row!.id, jid, lid: null };
-  }
-  // LID não resolvido para telefone: mantém a conversa identificada pelo LID, para revisão.
-  const key = `lid:${jid}`.slice(0, 64);
-  await tx
-    .insert(phones)
-    .values({ e164: null, dedupeKey: key, rawSample: (pushName ?? jid).slice(0, 64), formatStatus: 'needs_review', formatNote: 'Contato identificado apenas por LID', waStatus: 'found', waJid: jid })
-    .onDuplicateKeyUpdate({ set: { updatedAt: new Date() } });
-  const [row] = await tx.select({ id: phones.id }).from(phones).where(eq(phones.dedupeKey, key));
-  return { id: row!.id, jid, lid: isLidJid(jid) ? jid : null };
+  const [known] = await tx
+    .select({ id: conversations.phoneId, jid: conversations.jid, lid: conversations.lid })
+    .from(conversations)
+    .where(and(eq(conversations.sessionId, sessionId), or(eq(conversations.jid, jid), eq(conversations.lid, jid))))
+    .limit(1);
+  return known ?? null;
 }
 
-/**
- * Mensagens de sistema do WhatsApp (sincronização de histórico ao parear, troca
- * de chaves, avisos de segurança etc.) chegam como `message.received` com
- * conteúdo vazio. Não são mensagens de pessoas e não entram na caixa de entrada.
- */
 const SYSTEM_MESSAGE_KEYS = new Set(['protocolMessage', 'senderKeyDistributionMessage', 'messageContextInfo', 'keepInChatMessage', 'pollUpdateMessage', 'encReactionMessage']);
 export function isSystemMessage(d: Data): boolean {
   const raw = (d.raw ?? {}) as { message?: Record<string, unknown> | null };
@@ -75,13 +53,11 @@ export function isSystemMessage(d: Data): boolean {
   return contentKeys.length === 0;
 }
 
-/** JID do próprio número da sessão (campo `receiver` em mensagens recebidas). */
 function ownJidOf(d: Data, event: 'received' | 'sent'): string | null {
   const v = event === 'received' ? d.receiver : d.from;
   return typeof v === 'string' ? v.replace(/:\d+@/, '@') : null;
 }
 
-/** JID de telefone alternativo informado pelo Baileys quando o endereçamento é por LID. */
 function altPhoneJid(d: Data): string | null {
   const raw = (d.raw ?? {}) as { key?: Record<string, unknown> };
   const k = { ...(raw.key ?? {}), ...((d.key ?? {}) as Record<string, unknown>) };
@@ -132,12 +108,10 @@ function questionBlock(questions: { key: string; text: string }[], from: number,
   return { text: block.map((q) => q.text).join('\n\n'), keys: block.map((q) => q.key) };
 }
 
-/** Decide o próximo passo após uma mensagem do contato (regras da seção 17). */
 async function applyAutomation(tx: Tx, ctx: AppContext, convId: number, inboundMessageId: number, text: string | null): Promise<string> {
   const [conv] = await tx.select().from(conversations).where(eq(conversations.id, convId)).for('update');
   if (!conv) return 'sem conversa';
 
-  // Regra 4: qualquer resposta suspende as ações automáticas pendentes
   await tx
     .update(messages)
     .set({ status: 'cancelled', error: 'Suspensa: contato respondeu' })
@@ -160,7 +134,6 @@ async function applyAutomation(tx: Tx, ctx: AppContext, convId: number, inboundM
   const cls: Classification = classifyReply(text, context);
   await tx.update(messages).set({ purpose: `reply:${cls.kind}` }).where(eq(messages.id, inboundMessageId));
 
-  // Recusa tem prioridade sobre qualquer estado (inclusive atendimento humano)
   if (cls.kind === 'refusal') {
     await suppressPhone(tx, { phoneId: conv.phoneId, reason: 'recusa', detail: cls.reason, actor: 'contact', now: ctx.now(), campaignId: cc?.campaignId ?? null, sourceMessageId: inboundMessageId });
     const opps = await tx.execute(sql`SELECT id FROM opportunities WHERE conversation_id = ${convId} AND stage NOT IN ('won','lost')`);
@@ -175,7 +148,6 @@ async function applyAutomation(tx: Tx, ctx: AppContext, convId: number, inboundM
     return 'recusa registrada';
   }
 
-  // Atendimento humano: automação pausada até ação explícita
   if (conv.automationPaused || conv.state === 'human') return 'atendimento humano';
 
   if (!cc || ['qualified', 'handed_off'].includes(cc.status)) {
@@ -191,7 +163,7 @@ async function applyAutomation(tx: Tx, ctx: AppContext, convId: number, inboundM
   }
 
   if (cls.kind === 'auto_reply') {
-    // Não avança nem encaminha: aguarda uma resposta de pessoa.
+
     return 'resposta automática ignorada';
   }
 
@@ -206,7 +178,7 @@ async function applyAutomation(tx: Tx, ctx: AppContext, convId: number, inboundM
       await tx.update(conversations).set({ state: 'awaiting_human' }).where(eq(conversations.id, convId));
       return 'encaminhada para atendimento';
     }
-    // Afirmativa: oportunidade em qualificação com a oferta apresentada
+
     await createOpportunity(tx, {
       companyId: cc.companyId,
       service: campaign.service,
@@ -242,7 +214,7 @@ async function applyAutomation(tx: Tx, ctx: AppContext, convId: number, inboundM
     const answers = { ...(cc.answers ?? {}) };
     const block = questionBlock(questions, cc.qualificationIndex, campaign.questionsPerMessage);
     if (cls.kind === 'question') {
-      // Dúvidas e negociação vão para atendimento humano (respostas já obtidas são preservadas)
+
       await setParticipationStatus(tx, cc, 'handed_off', 'system', `Dúvida fora do roteiro: ${cls.reason}`, { answers });
       await tx.update(conversations).set({ state: 'awaiting_human' }).where(eq(conversations.id, convId));
       await tx.execute(sql`UPDATE opportunities SET qualification_answers = ${JSON.stringify(answers)} WHERE campaign_contact_id = ${cc.id}`);
@@ -274,13 +246,14 @@ async function handleReceived(tx: Tx, ctx: AppContext, sessionId: number, d: Dat
   const rawFrom = (typeof d.from === 'string' && d.from) || key.remoteJid;
   if (!key.id || !rawFrom) return { conversationId: null, note: 'sem identificadores' };
   if (isSystemMessage(d)) return { conversationId: null, note: 'mensagem de sistema do WhatsApp ignorada' };
-  // LID: usa o telefone alternativo quando o gateway o informa
+
   const from = isLidJid(rawFrom) ? (altPhoneJid(d) ?? rawFrom) : rawFrom;
   const own = ownJidOf(d, 'received');
   if (own && from.replace(/:\d+@/, '@') === own) return { conversationId: null, note: 'conversa consigo mesmo ignorada' };
   const pushName = typeof d.pushName === 'string' ? d.pushName : null;
-  const phone = await phoneForJid(tx, from, pushName);
-  const conv = await ensureConversation(tx, { sessionId, phoneId: phone.id, jid: phone.lid ? from : from.replace(/:\d+@/, '@'), displayName: pushName, lid: phone.lid });
+  const phone = await phoneForJid(tx, from, sessionId);
+  if (!phone || !(await hasCommercialContext(tx, phone.id, sessionId))) return { conversationId: null, note: 'contato sem vínculo comercial ignorado' };
+  const conv = await ensureConversation(tx, { sessionId, phoneId: phone.id, jid: phone.jid, displayName: pushName, lid: isLidJid(rawFrom) ? rawFrom.replace(/:\d+@/, '@') : phone.lid });
   const text = messageText(d);
   const at = occurredAt(d, ctx.now());
   const ins = await tx
@@ -313,18 +286,18 @@ async function handleSent(tx: Tx, ctx: AppContext, sessionId: number, d: Data): 
   const to = (typeof d.receiver === 'string' && d.receiver) || key.remoteJid;
   if (!key.id || !to || d.isGroup === true || (typeof d.chatType === 'string' && d.chatType !== 'PERSONAL')) return { conversationId: null, note: 'ignorado' };
 
-  // Já registrada (envio feito pelo aero)?
   const [known] = await tx.select({ id: messages.id, conversationId: messages.conversationId }).from(messages).where(eq(messages.externalId, key.id)).limit(1);
   if (known) return { conversationId: known.conversationId, note: 'envio do aero confirmado' };
   if (isSystemMessage(d)) return { conversationId: null, note: 'mensagem de sistema do WhatsApp ignorada' };
   const own = ownJidOf(d, 'sent');
   if (own && to.replace(/:\d+@/, '@') === own) return { conversationId: null, note: 'conversa consigo mesmo ignorada' };
 
-  const phone = await phoneForJid(tx, to, null);
-  const conv = await ensureConversation(tx, { sessionId, phoneId: phone.id, jid: to.replace(/:\d+@/, '@'), lid: phone.lid });
+  const resolvedTo = isLidJid(to) ? (altPhoneJid(d) ?? to) : to;
+  const phone = await phoneForJid(tx, resolvedTo, sessionId);
+  if (!phone || !(await hasCommercialContext(tx, phone.id, sessionId))) return { conversationId: null, note: 'contato sem vínculo comercial ignorado' };
+  const conv = await ensureConversation(tx, { sessionId, phoneId: phone.id, jid: phone.jid, lid: isLidJid(to) ? to.replace(/:\d+@/, '@') : phone.lid });
   const text = messageText(d);
 
-  // Corrida: o webhook chegou antes de o aero gravar o id externo do próprio envio
   const [inflight] = await tx
     .select({ id: messages.id })
     .from(messages)
@@ -335,7 +308,6 @@ async function handleSent(tx: Tx, ctx: AppContext, sessionId: number, d: Data): 
     return { conversationId: conv.id, note: 'envio do aero vinculado' };
   }
 
-  // Mensagem enviada pelo próprio celular: registra e assume como atendimento humano
   await tx
     .insert(messages)
     .ignore()
@@ -355,7 +327,7 @@ async function handleStatus(tx: Tx, d: Data): Promise<{ conversationId: number |
   if (!keyId || !target) return { conversationId: null, note: 'status ignorado' };
   const [msg] = await tx.select().from(messages).where(and(eq(messages.externalId, keyId), eq(messages.direction, 'out'))).limit(1).for('update');
   if (!msg) {
-    // Pode ter chegado antes do registro do envio: tenta de novo mais tarde
+
     throw new RetryLater(`Mensagem ${keyId} ainda não registrada`);
   }
   const current = STATUS_RANK[msg.status] ?? 0;
@@ -378,7 +350,7 @@ export async function processWebhookEvent(ctx: AppContext, eventId: number): Pro
 
   try {
     const result = await ctx.db.transaction(async (tx) => {
-      // Reivindica o evento (processamento único mesmo com jobs duplicados)
+
       const [locked] = await tx.select().from(webhookEvents).where(eq(webhookEvents.id, eventId)).for('update');
       if (!locked || locked.processedAt) return { conversationId: null, note: 'já processado' };
       let r: { conversationId: number | null; note: string };

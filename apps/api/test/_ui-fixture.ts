@@ -1,5 +1,3 @@
-// Cenário fictício no banco aero_test para inspeção visual da interface.
-// Usa os mesmos fakes dos testes (nenhuma integração real é chamada).
 import { sql } from 'drizzle-orm';
 import { buildApp } from '../src/app.ts';
 import { companies, companyPhones, phones, webhookEvents } from '../src/db/schema.ts';

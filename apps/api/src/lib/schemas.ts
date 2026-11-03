@@ -1,6 +1,4 @@
-import { Type, type TEnum, type TObject, type TProperties, type TSchema } from '@fastify/type-provider-typebox';
-
-// Utilitários de schema (TypeBox -> JSON Schema -> validação + OpenAPI).
+import { Type, type Static, type TEnum, type TObject, type TProperties, type TSchema } from '@fastify/type-provider-typebox';
 
 export const Id = Type.Integer({ minimum: 1 });
 export const IdParams = Type.Object({ id: Id });
@@ -9,12 +7,19 @@ export function StringEnum<const T extends readonly string[]>(values: T, opts: {
   return Type.Enum([...values], opts) as unknown as TEnum<[...T]>;
 }
 
-/** Junta as propriedades de dois objetos (substitui o antigo Type.Composite). */
 export function Merge<A extends TProperties, B extends TProperties>(a: TObject<A>, b: TObject<B>) {
   return Type.Object({ ...a.properties, ...b.properties } as A & B);
 }
 
-export const Nullable = <T extends TSchema>(schema: T) => Type.Union([schema, Type.Null()]);
+export const Nullable = <T extends TSchema>(schema: T) => {
+  // A scalar anyOf can coerce JSON null into 0/'' before considering the null branch.
+  // OpenAPI nullable keeps null in the accepted type set, so AJV never coerces it.
+  const json = schema as TSchema & { type?: unknown; enum?: unknown; const?: unknown };
+  if (typeof json.type === 'string' && json.enum === undefined && json.const === undefined) {
+    return Type.Unsafe<Static<T> | null>({ ...schema, nullable: true });
+  }
+  return Type.Union([schema, Type.Null()]);
+};
 
 export const DateTimeStr = Type.String({ format: 'date-time' });
 export const Cents = Type.Integer({ minimum: 0, maximum: 9_000_000_000_000, description: 'Valor em centavos' });

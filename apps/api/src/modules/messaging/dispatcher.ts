@@ -6,12 +6,6 @@ import { isWithinWindow, startOfLocalDay } from '../../lib/schedule.ts';
 import { sendMessage } from './sender.ts';
 import { syncSessionStatus } from '../whatsapp/session.ts';
 
-// Despachante de envios automáticos. Um envio por tick, respeitando a capacidade
-// COMPARTILHADA da sessão (intervalo mínimo, limite por hora e por dia) — criar
-// campanhas não multiplica a capacidade do número. Entre campanhas, revezamento
-// pela que está há mais tempo sem enviar. Respostas dentro de conversas
-// (qualificação) têm prioridade sobre novas abordagens.
-
 const SENT_STATUSES = ['accepted', 'delivered', 'read', 'unknown', 'processing'] as const;
 const REPLY_MIN_INTERVAL_MS = 5_000;
 
@@ -48,7 +42,6 @@ export async function dispatchTick(ctx: AppContext): Promise<DispatchResult> {
   const last = await lastOutboundAt(ctx);
   const sinceLast = last ? now.getTime() - last.getTime() : Infinity;
 
-  // 1) Respostas pendentes em conversas (qualificação, confirmações)
   const [reply] = await ctx.db
     .select()
     .from(messages)
@@ -61,7 +54,6 @@ export async function dispatchTick(ctx: AppContext): Promise<DispatchResult> {
     return { sent: out.kind === 'accepted' ? 1 : 0, reason: `Resposta: ${out.kind}`, nextInMs: 1_000 };
   }
 
-  // 2) Primeiras abordagens: limites globais da sessão
   const minIntervalMs = settings.sendMinIntervalSeconds * 1000;
   if (sinceLast < minIntervalMs) return { sent: 0, reason: 'Intervalo mínimo global', nextInMs: minIntervalMs - sinceLast };
   const hourCount = await outboundCountSince(ctx, new Date(now.getTime() - 3600_000));
@@ -69,7 +61,6 @@ export async function dispatchTick(ctx: AppContext): Promise<DispatchResult> {
   const dayCount = await outboundCountSince(ctx, startOfLocalDay(now, settings.defaultTimezone));
   if (dayCount >= settings.sendDailyLimit) return { sent: 0, reason: 'Limite diário da sessão', nextInMs: 15 * 60_000 };
 
-  // Campanhas ativas com envios pendentes, revezando pela mais antiga sem envio
   const active = await ctx.db
     .select()
     .from(campaigns)
@@ -103,7 +94,7 @@ export async function dispatchTick(ctx: AppContext): Promise<DispatchResult> {
       .orderBy(asc(messages.scheduledFor), asc(messages.id))
       .limit(1);
     if (!next) continue;
-    // Marca o revezamento mesmo se o envio for cancelado pelas regras
+
     await ctx.db.update(campaigns).set({ lastDispatchAt: now }).where(eq(campaigns.id, c.id));
     const out = await sendMessage(ctx, next.id);
     return { sent: out.kind === 'accepted' ? 1 : 0, reason: `Campanha ${c.id}: ${out.kind}`, nextInMs: out.kind === 'accepted' ? minIntervalMs : 1_000 };

@@ -5,9 +5,6 @@ import type { AppContext } from '../../core/context.ts';
 import type { MessageMedia } from '../../db/schema.ts';
 import { badRequest } from '../../core/errors.ts';
 
-// Anexos enviados manualmente. Somente tipos suportados pelo gateway e com
-// tamanho limitado; o nome do arquivo em disco é gerado (nunca o do usuário).
-
 const ALLOWED: Record<string, string> = {
   'image/jpeg': 'image',
   'image/png': 'image',

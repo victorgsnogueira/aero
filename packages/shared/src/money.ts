@@ -1,6 +1,3 @@
-// Valores monetários trafegam como inteiros em centavos (unidade mínima da moeda)
-// e nunca como ponto flutuante. A moeda acompanha sempre o valor.
-
 export const CURRENCIES = ['BRL', 'USD', 'EUR'] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
@@ -14,7 +11,6 @@ export function formatMoney(amountCents: number | null | undefined, currency: st
   return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(amountCents / 100);
 }
 
-/** Converte texto digitado ("1.234,56" ou "1234.56") em centavos, sem float intermediário. */
 export function parseMoneyToCents(input: string): number | null {
   const cleaned = input.replace(/[^\d,.-]/g, '').trim();
   if (!cleaned) return null;
@@ -34,7 +30,6 @@ export function parseMoneyToCents(input: string): number | null {
   return negative ? -value : value;
 }
 
-/** Soma valores agrupando por moeda — nunca mistura moedas diferentes. */
 export function sumByCurrency(items: Money[]): Record<string, number> {
   const out: Record<string, number> = {};
   for (const item of items) out[item.currency] = (out[item.currency] ?? 0) + item.amountCents;

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.ts';
-import { companies } from '../src/db/schema.ts';
+import { companies, companyPhones, phones, suppressions } from '../src/db/schema.ts';
 import { signWebhookBody } from '../src/integrations/wa/webhook.ts';
 import { createTestEnv, seedBasics, type TestEnv } from './helpers.ts';
 
@@ -79,6 +79,39 @@ describe('rotas, segurança e mapa', () => {
     assert.equal(out.json().points.length, 0, 'consulta por área visível');
   });
 
+  test('leads: ordenação por coluna cobre todos os resultados antes da paginação', async () => {
+    const values = [
+      { name: 'Ordenacao Zeta', category: 'B', city: 'C', number: '+5511999900300', wa: 'pending' as const, day: 2 },
+      { name: 'Ordenacao Alfa', category: 'C', city: 'B', number: '+5511999900100', wa: 'found' as const, day: 3 },
+      { name: 'Ordenacao Meio', category: 'A', city: 'A', number: '+5511999900200', wa: 'not_found' as const, day: 1 },
+    ];
+    const ids: number[] = [];
+    for (const value of values) {
+      const [company] = await env.ctx.db.insert(companies).values({ name: value.name, category: value.category, city: value.city, lastSeenAt: new Date(`2026-01-0${value.day}T00:00:00Z`) }).$returningId();
+      const [phone] = await env.ctx.db.insert(phones).values({ e164: value.number, rawSample: value.number, dedupeKey: value.number, formatStatus: 'valid', waStatus: value.wa }).$returningId();
+      ids.push(company!.id);
+      await env.ctx.db.insert(companyPhones).values({ companyId: company!.id, phoneId: phone!.id, rawValue: value.number });
+      if (value.day === 2) await env.ctx.db.insert(suppressions).values({ phoneId: phone!.id, reason: 'manual' });
+    }
+    const orders = { name: [1, 2, 0], category: [2, 0, 1], phone: [1, 2, 0], whatsapp: [0, 1, 2], local: [2, 1, 0], recent: [2, 0, 1], situation: [0, 1, 2] };
+    for (const [sort, order] of Object.entries(orders)) {
+      for (const direction of ['asc', 'desc']) {
+        const expected = direction === 'asc' ? order : sort === 'situation' ? [0, 2, 1] : [...order].reverse();
+        const first = await app.inject({ method: 'GET', url: `/api/leads?q=Ordenacao&sort=${sort}&direction=${direction}&pageSize=2&page=1`, headers: { host: 'localhost' } });
+        assert.equal(first.statusCode, 200, `${sort} ${direction}: ${first.body}`);
+        const second = await app.inject({ method: 'GET', url: `/api/leads?q=Ordenacao&sort=${sort}&direction=${direction}&pageSize=2&page=2`, headers: { host: 'localhost' } });
+        assert.equal(second.statusCode, 200);
+        assert.equal(first.json().total, 3);
+        const actual = [...first.json().items, ...second.json().items].map((item: { id: number }) => item.id);
+        assert.deepEqual(actual, expected.map((index) => ids[index]), `${sort} ${direction}`);
+      }
+    }
+    const invalid = await app.inject({ method: 'GET', url: '/api/leads?sort=name%20DESC&direction=asc', headers: { host: 'localhost' } });
+    assert.equal(invalid.statusCode, 400);
+    const legacy = await app.inject({ method: 'GET', url: '/api/leads?q=Ordenacao&sort=name', headers: { host: 'localhost' } });
+    assert.deepEqual(legacy.json().items.map((item: { id: number }) => item.id), [ids[1], ids[2], ids[0]]);
+  });
+
   test('cenário 15: proposta aceita e pagamento confirmado são eventos distintos', async () => {
     const H = { host: 'localhost', 'x-aero-request': '1', 'content-type': 'application/json' };
     const [c] = await env.ctx.db.insert(companies).values({ name: 'Cliente P', sourcePlaceId: 'p-x' }).$returningId();
@@ -122,7 +155,7 @@ describe('rotas, segurança e mapa', () => {
 });
 
 describe('cenários 19 e 20: exposição de rede (configuração)', () => {
-  /** Itens de lista dentro de blocos `ports:` de um arquivo compose. */
+
   function publishedPorts(yaml: string): string[] {
     const out: string[] = [];
     let indent = -1;

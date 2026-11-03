@@ -35,7 +35,6 @@ export function regionLabel(s: Pick<Scan, 'neighborhood' | 'city' | 'state' | 'c
   return [s.neighborhood, s.city, s.state, s.country].filter((x) => x && x.trim()).join(', ');
 }
 
-/** Consulta textual enviada ao Google Maps: termo + região digitada. */
 export function buildQuery(keyword: string, region: string): string {
   return region ? `${keyword.trim()} ${region}` : keyword.trim();
 }
@@ -44,11 +43,6 @@ export function queryHash(query: string, lang: string): string {
   return createHash('sha256').update(`${lang}|${query.toLowerCase().replace(/\s+/g, ' ').trim()}`).digest('hex');
 }
 
-/**
- * Planejamento: primeira passada com uma unidade por termo; se a meta não for
- * atingida, o orquestrador cria uma segunda passada com profundidade maior,
- * respeitando `maxUnits`.
- */
 export function planFirstPass(input: Pick<CreateScanInput, 'keywords' | 'depth'> & { region: string }): { query: string; depth: number }[] {
   const uniq = [...new Set(input.keywords.map((k) => k.trim()).filter(Boolean))];
   return uniq.map((k) => ({ query: buildQuery(k, input.region), depth: input.depth }));
@@ -91,7 +85,6 @@ async function transition(db: Db, id: number, allowed: ScanStatus[], to: ScanSta
   });
 }
 
-/** Início/retomada manual. Coletar nunca dispara mensagens. */
 export const startScan = (db: Db, id: number, now: Date) =>
   transition(db, id, ['draft'], 'queued', 'start', { startedAt: now, statusReason: null, lastError: null });
 
@@ -100,7 +93,7 @@ export const pauseScan = (db: Db, id: number) =>
 
 export async function resumeScan(db: Db, id: number): Promise<Scan> {
   const scan = await transition(db, id, ['paused', 'partial', 'failed'], 'queued', 'resume', { statusReason: null, finishedAt: null });
-  // Unidades que falharam voltam a ficar pendentes ao retomar
+
   await db
     .update(scanUnits)
     .set({ status: 'pending', error: null, externalJobId: null })
@@ -111,7 +104,6 @@ export async function resumeScan(db: Db, id: number): Promise<Scan> {
 export const cancelScan = (db: Db, id: number) =>
   transition(db, id, ['draft', 'queued', 'running', 'pausing', 'paused'], 'cancelling', 'cancel', { statusReason: 'Cancelamento solicitado' });
 
-/** Recalcula contadores a partir dos dados persistidos (fonte de verdade). */
 export async function recomputeCounters(db: DbOrTx, scanId: number): Promise<Pick<Scan, 'placesFound' | 'phonesFound' | 'newRecords' | 'duplicates' | 'uniquePhones' | 'waConfirmed' | 'waInconclusive' | 'surplus'>> {
   const [units] = (await db.execute(sql`
     SELECT COALESCE(SUM(places_found),0) AS places FROM scan_units WHERE scan_id = ${scanId}`))[0] as unknown as { places: string }[];

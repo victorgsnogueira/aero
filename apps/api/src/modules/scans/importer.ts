@@ -9,9 +9,9 @@ export interface ImportContext {
   scanId: number;
   scanUnitId: number;
   countryCode: string | null;
-  /** Meta de números únicos (somente quando targetKind = unique_phones). */
+
   phoneTarget: number | null;
-  /** Números válidos já contabilizados para a meta nesta varredura. */
+
   countedPhones: number;
   now: Date;
 }
@@ -23,11 +23,10 @@ export interface ImportOutcome {
   duplicates: number;
   surplus: number;
   countedPhones: number;
-  /** Todas as empresas vistas nesta unidade (inclusive já presentes na varredura). */
+
   companyIds: number[];
 }
 
-/** Chave da fonte: place_id; na falta, cid/data_id; por último um hash estável de nome+endereço. */
 export function sourceKey(p: ScrapedPlace): string {
   if (p.placeId) return p.placeId;
   if (p.cid) return `cid:${p.cid}`;
@@ -41,16 +40,10 @@ function countryFor(p: ScrapedPlace, fallback: string | null): string | null {
   return fallback;
 }
 
-/**
- * Importa os estabelecimentos de uma unidade de varredura.
- * Reimportar atualiza apenas campos vindos da fonte: anotações, conversas,
- * oportunidades, recusas e supressões nunca são apagados ou sobrescritos.
- */
 export async function importPlaces(tx: Tx, ctx: ImportContext, places: ScrapedPlace[]): Promise<ImportOutcome> {
   const out: ImportOutcome = { places: 0, phonesFound: 0, newCompanies: 0, duplicates: 0, surplus: 0, countedPhones: ctx.countedPhones, companyIds: [] };
   const seenPhonesInScan = new Set<number>();
 
-  // Telefones já contabilizados nesta varredura (para não contar duas vezes)
   const counted = await tx.execute(sql`
     SELECT DISTINCT cp.phone_id AS id FROM scan_results sr
     JOIN company_phones cp ON cp.company_id = sr.company_id
@@ -92,7 +85,7 @@ export async function importPlaces(tx: Tx, ctx: ImportContext, places: ScrapedPl
     let isNewCompany = false;
     if (existing) {
       companyId = existing.id;
-      // Somente campos da fonte; preserva coordenadas antigas se a nova coleta veio sem elas.
+
       await tx
         .update(companies)
         .set({
@@ -114,7 +107,6 @@ export async function importPlaces(tx: Tx, ctx: ImportContext, places: ScrapedPl
 
     if (!out.companyIds.includes(companyId)) out.companyIds.push(companyId);
 
-    // Telefone (opcional)
     const companyPhoneIds: { id: number; valid: boolean }[] = [];
     if (p.phone) {
       out.phonesFound++;
@@ -140,7 +132,6 @@ export async function importPlaces(tx: Tx, ctx: ImportContext, places: ScrapedPl
       companyPhoneIds.push({ id: phone!.id, valid: phone!.formatStatus === 'valid' });
     }
 
-    // Ocorrência na varredura (única por empresa)
     const [prior] = await tx
       .select({ id: scanResults.id })
       .from(scanResults)

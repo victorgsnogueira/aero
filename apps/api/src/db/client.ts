@@ -3,7 +3,7 @@ import { drizzle, type MySql2Database } from 'drizzle-orm/mysql2';
 import * as schema from './schema.ts';
 
 export type Db = MySql2Database<typeof schema>;
-/** Transação do Drizzle (mesma API de consulta do `Db`). */
+
 export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 export type DbOrTx = Db | Tx;
 

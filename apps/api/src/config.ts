@@ -1,7 +1,3 @@
-// Configuração de infraestrutura lida do ambiente. Configurações comerciais
-// (nome, empresa, mensagens, horários, limites de envio) ficam no banco e são
-// editadas pela interface — ver módulo `settings`.
-
 function str(name: string, fallback?: string): string {
   const value = process.env[name];
   if (value === undefined || value === '') {
@@ -41,9 +37,9 @@ export interface AppConfig {
   logLevel: string;
   databaseUrl: string;
   redisUrl: string;
-  /** Origens de navegador autorizadas a chamar a API (ex.: http://localhost:5173). */
+
   allowedOrigins: string[];
-  /** Valores aceitos no cabeçalho Host (proteção contra DNS rebinding). */
+
   allowedHosts: string[];
   scraper: { baseUrl: string; timeoutMs: number };
   gateway: {
@@ -51,14 +47,14 @@ export interface AppConfig {
     apiKey: string;
     sessionId: string;
     webhookSecret: string;
-    /** URL que o gateway usa para chamar o aero pela rede interna do Docker. */
+
     webhookUrl: string;
     timeoutMs: number;
   };
   sending: {
-    /** Interruptor global: sem ele nenhum envio sai para o gateway. */
+
     enabled: boolean;
-    /** Se preenchida, somente estes números (E.164) podem receber mensagens. */
+
     allowlist: string[];
   };
   media: { dir: string; maxBytes: number };

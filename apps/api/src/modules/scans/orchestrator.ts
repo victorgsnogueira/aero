@@ -6,18 +6,14 @@ import { importPlaces } from './importer.ts';
 import { getScan, listUnits, queryHash, recomputeCounters, targetProgress, type Scan, type ScanUnit } from './service.ts';
 import { runValidation } from '../validation/service.ts';
 
-// Orquestrador de varreduras. Cada "tick" é idempotente e avança o estado com
-// base no que está persistido; pode ser repetido após reinícios sem duplicar efeitos.
-// Executado pelo worker com concorrência 1 (o scraper processa um job por vez).
-
 const MAX_UNIT_ATTEMPTS = 2;
-/** Tolerância além do max_time da unidade antes de considerá-la travada. */
+
 const UNIT_GRACE_SECONDS = 600;
-/** Uma consulta idêntica executada há menos disso é reaproveitada em vez de repetida. */
+
 const QUERY_REUSE_HOURS = 24;
 
 export interface TickResult {
-  /** Agendar próximo tick em ms; null = varredura encerrada/parada. */
+
   nextInMs: number | null;
 }
 
@@ -35,8 +31,7 @@ async function setUnit(ctx: AppContext, unitId: number, patch: Partial<ScanUnit>
 
 async function abandonActiveUnits(ctx: AppContext, units: ScanUnit[]): Promise<void> {
   for (const u of units.filter((x) => x.status === 'submitted' || x.status === 'running')) {
-    // DELETE remove o job pendente; um job já em execução segue no scraper até o
-    // max_time — o resultado é descartado (não importado).
+
     if (u.externalJobId) await ctx.scraper.deleteJob(u.externalJobId).catch(() => undefined);
     await setUnit(ctx, u.id, { status: 'abandoned', finishedAt: ctx.now(), error: 'Descartada por cancelamento' });
   }
@@ -51,7 +46,6 @@ async function targetReached(ctx: AppContext, scan: Scan): Promise<boolean> {
   return targetProgress({ targetKind: scan.targetKind, ...counters }) >= scan.targetCount;
 }
 
-/** Importa o CSV de uma unidade concluída. */
 async function importUnit(ctx: AppContext, scan: Scan, unit: ScanUnit): Promise<void> {
   await setUnit(ctx, unit.id, { status: 'importing' });
   const csv = unit.externalJobId ? await ctx.scraper.downloadCsv(unit.externalJobId) : null;
@@ -85,11 +79,10 @@ async function importUnit(ctx: AppContext, scan: Scan, unit: ScanUnit): Promise<
       executedAt: ctx.now(),
     });
   });
-  // Resultado já persistido; o CSV no scraper pode ser removido para liberar disco.
+
   if (unit.externalJobId) await ctx.scraper.deleteJob(unit.externalJobId).catch(() => undefined);
 }
 
-/** Reaproveita o resultado de uma consulta idêntica recente, sem novo acesso ao Google Maps. */
 async function tryReuse(ctx: AppContext, scan: Scan, unit: ScanUnit): Promise<boolean> {
   const since = new Date(ctx.now().getTime() - QUERY_REUSE_HOURS * 3600_000);
   const [prior] = await ctx.db
@@ -143,7 +136,6 @@ export async function scanTick(ctx: AppContext, scanId: number): Promise<TickRes
     scan = { ...scan, status: 'running', startedAt: scan.startedAt ?? ctx.now() };
   }
 
-  // Limite de duração total
   const deadline = (scan.startedAt ?? ctx.now()).getTime() + scan.maxDurationMinutes * 60_000;
   if (ctx.now().getTime() > deadline) {
     await abandonActiveUnits(ctx, units);
@@ -151,10 +143,9 @@ export async function scanTick(ctx: AppContext, scanId: number): Promise<TickRes
     return finish(ctx, scan, reached ? 'completed' : 'partial', reached ? 'Meta atingida' : `Tempo máximo de ${scan.maxDurationMinutes} min atingido antes da meta`);
   }
 
-  // 1) Acompanhar unidade em andamento
   if (active) {
     if (active.status === 'importing') {
-      // Importação interrompida (ex.: reinício): refaz — é idempotente.
+
       await importUnit(ctx, scan, active);
     } else {
       let job;
@@ -190,7 +181,6 @@ export async function scanTick(ctx: AppContext, scanId: number): Promise<TickRes
     await ctx.events.publish({ type: 'scan.updated', scanId: scan.id });
   }
 
-  // 2) Validação de WhatsApp (somente no modo que a inclui)
   if (scan.mode === 'collect_and_validate') {
     const res = await runValidation(ctx, { kind: 'scan', scanId: scan.id }, {
       maxBatches: 5,
@@ -217,11 +207,10 @@ export async function scanTick(ctx: AppContext, scanId: number): Promise<TickRes
   }
   if (fresh.status === 'cancelling') return { nextInMs: 1_000 };
 
-  // 3) Próxima unidade
   const refreshed = await listUnits(ctx.db, scan.id);
   const next = refreshed.find((u) => u.status === 'pending');
   if (!next) {
-    // Segunda passada com mais profundidade, se houver orçamento de unidades
+
     const firstPass = refreshed.filter((u) => u.depth === scan.depth);
     const canEscalate = refreshed.every((u) => u.depth === scan.depth) && refreshed.length < scan.maxUnits;
     if (canEscalate && firstPass.length > 0) {
@@ -263,7 +252,6 @@ export async function scanTick(ctx: AppContext, scanId: number): Promise<TickRes
   return { nextInMs: 10_000 };
 }
 
-/** Varreduras que precisam de acompanhamento (usado na recuperação após reinício). */
 export async function activeScanIds(ctx: AppContext): Promise<number[]> {
   const rows = await ctx.db.select({ id: scans.id }).from(scans).where(inArray(scans.status, ['queued', 'running', 'pausing', 'cancelling'])).orderBy(asc(scans.id));
   return rows.map((r) => r.id);

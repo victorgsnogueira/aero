@@ -7,6 +7,8 @@ import { badRequest, conflict, notFound } from '../../core/errors.ts';
 import { audit } from '../../core/audit.ts';
 import { sendMessage, type Message } from '../messaging/sender.ts';
 import { storeMedia } from '../messaging/media.ts';
+import { openManualConversation } from './conversations.ts';
+import { commercialConversationScope } from './scope.ts';
 
 const presentMessage = (m: Message) => ({
   id: m.id,
@@ -30,8 +32,12 @@ export const inboxRoutes: FastifyPluginAsyncTypebox = async (app) => {
   const { ctx } = app;
   const { db } = ctx;
 
+  app.post('/conversations', { schema: { tags: ['inbox'], body: Type.Object({ phoneId: Type.Integer({ minimum: 1 }) }), response: { 201: Type.Object({ id: Type.Integer() }) } } }, async (req, reply) => {
+    return reply.code(201).send(await openManualConversation(ctx, req.body.phoneId));
+  });
+
   async function loadConv(id: number) {
-    const [c] = await db.select().from(conversations).where(eq(conversations.id, id));
+    const [c] = await db.select().from(conversations).where(and(eq(conversations.id, id), commercialConversationScope(sql`${conversations}`)));
     if (!c) throw notFound('Conversa');
     return c;
   }
@@ -47,7 +53,7 @@ export const inboxRoutes: FastifyPluginAsyncTypebox = async (app) => {
     },
     async (req) => {
       const { page, pageSize, offset, limit } = pageArgs(req.query);
-      const parts = [sql`1=1`];
+      const parts = [commercialConversationScope()];
       if (req.query.state) parts.push(sql`cv.state = ${req.query.state}`);
       if (req.query.unread) parts.push(sql`cv.unread_count > 0`);
       if (req.query.campaignId) parts.push(sql`EXISTS (SELECT 1 FROM campaign_contacts x WHERE x.phone_id = cv.phone_id AND x.campaign_id = ${req.query.campaignId})`);
@@ -69,7 +75,7 @@ export const inboxRoutes: FastifyPluginAsyncTypebox = async (app) => {
       const [cnt] = await db.execute(sql`
         SELECT COUNT(*) AS n FROM conversations cv JOIN phones p ON p.id = cv.phone_id
         WHERE ${where} AND EXISTS (SELECT 1 FROM messages mx WHERE mx.conversation_id = cv.id AND mx.status <> 'scheduled' AND mx.status <> 'cancelled')`);
-      const [unread] = await db.execute(sql`SELECT COALESCE(SUM(unread_count),0) AS n FROM conversations`);
+      const [unread] = await db.execute(sql`SELECT COALESCE(SUM(cv.unread_count),0) AS n FROM conversations cv WHERE ${commercialConversationScope()}`);
       return {
         items: (rows as unknown as Record<string, unknown>[]).map((r) => ({
           id: Number(r.id),
@@ -154,10 +160,9 @@ export const inboxRoutes: FastifyPluginAsyncTypebox = async (app) => {
     return { ok: true };
   });
 
-  /** Assumir: pausa a automação e cancela ações automáticas pendentes. */
   app.post('/conversations/:id/takeover', { schema: { tags: ['inbox'], params: IdParams } }, async (req) => {
     await db.transaction(async (tx) => {
-      const [c] = await tx.select().from(conversations).where(eq(conversations.id, req.params.id)).for('update');
+      const [c] = await tx.select().from(conversations).where(and(eq(conversations.id, req.params.id), commercialConversationScope(sql`${conversations}`))).for('update');
       if (!c) throw notFound('Conversa');
       await tx.update(conversations).set({ automationPaused: true, state: 'human' }).where(eq(conversations.id, c.id));
       await tx
@@ -170,10 +175,9 @@ export const inboxRoutes: FastifyPluginAsyncTypebox = async (app) => {
     return { ok: true };
   });
 
-  /** Retomar automação: somente por ação explícita do proprietário. */
   app.post('/conversations/:id/resume-automation', { schema: { tags: ['inbox'], params: IdParams } }, async (req) => {
     await db.transaction(async (tx) => {
-      const [c] = await tx.select().from(conversations).where(eq(conversations.id, req.params.id)).for('update');
+      const [c] = await tx.select().from(conversations).where(and(eq(conversations.id, req.params.id), commercialConversationScope(sql`${conversations}`))).for('update');
       if (!c) throw notFound('Conversa');
       if (!c.automationPaused && c.state !== 'human') throw conflict('not_paused', 'A automação não está pausada');
       await tx.update(conversations).set({ automationPaused: false, state: 'awaiting_reply' }).where(eq(conversations.id, c.id));
@@ -233,7 +237,7 @@ export const inboxRoutes: FastifyPluginAsyncTypebox = async (app) => {
       });
     const [msg] = await db.select().from(messages).where(eq(messages.idempotencyKey, `manual:${clientKey}`));
     if ((res[0] as { affectedRows: number }).affectedRows > 0) {
-      // Envio manual implica atendimento humano nesta conversa
+
       await db.update(conversations).set({ automationPaused: true, state: 'human', unreadCount: 0 }).where(eq(conversations.id, conv.id));
       await audit(db, 'owner', 'message.manual', 'message', msg!.id);
       await sendMessage(ctx, msg!.id);
@@ -261,7 +265,6 @@ export const inboxRoutes: FastifyPluginAsyncTypebox = async (app) => {
     return manualSend(req.params.id, caption || null, clientKey, media);
   });
 
-  // Mensagens agendadas podem ser editadas ou canceladas antes do envio.
   app.patch('/messages/:id', { schema: { tags: ['inbox'], params: IdParams, body: Type.Object({ body: Type.String({ minLength: 1, maxLength: 4096 }) }) } }, async (req) => {
     const res = await db.update(messages).set({ body: req.body.body }).where(and(eq(messages.id, req.params.id), eq(messages.status, 'scheduled')));
     if ((res[0] as { affectedRows: number }).affectedRows === 0) throw conflict('not_editable', 'Somente mensagens agendadas podem ser editadas');
@@ -279,10 +282,6 @@ export const inboxRoutes: FastifyPluginAsyncTypebox = async (app) => {
     return { ok: true };
   });
 
-  /**
-   * Resolução manual de envio com resultado desconhecido (após conferir no celular).
-   * "sent": marca como aceita sem id externo. "not_sent": marca como falha; reenvio só manual.
-   */
   app.post(
     '/messages/:id/resolve-unknown',
     { schema: { tags: ['inbox'], params: IdParams, body: Type.Object({ as: StringEnum(['sent', 'not_sent'] as const) }) } },
@@ -297,10 +296,10 @@ export const inboxRoutes: FastifyPluginAsyncTypebox = async (app) => {
     },
   );
 
-  // Mídia recebida: o aero busca no gateway (apenas caminhos /media/ do próprio gateway).
   app.get('/messages/:id/media', { schema: { tags: ['inbox'], params: IdParams } }, async (req, reply) => {
     const [m] = await db.select().from(messages).where(eq(messages.id, req.params.id));
     if (!m?.media) throw notFound('Mídia');
+    await loadConv(m.conversationId);
     if (m.media.storageKey) {
       const { readMedia } = await import('../messaging/media.ts');
       const file = await readMedia(ctx, m.media);

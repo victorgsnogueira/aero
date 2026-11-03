@@ -1,13 +1,5 @@
 import type { ReplyClass } from '@aero/shared';
 
-// Classificação por regras (sem IA) das respostas recebidas.
-// Princípios:
-//  - Recusa/descadastro tem prioridade sobre qualquer outra leitura.
-//  - "Sim" só conta como autorização quando a mensagem é curta e inequívoca;
-//    nunca porque a palavra aparece no meio do texto.
-//  - Mensagens automáticas do destinatário não produzem avanço comercial.
-//  - Na dúvida: "unrecognized" -> encaminhar para atendimento humano.
-
 export type ClassifyContext = 'first_contact' | 'qualification';
 
 export function normalizeText(text: string): string {
@@ -27,7 +19,6 @@ function tokens(norm: string): string[] {
     .filter(Boolean);
 }
 
-/** Opt-out explícito: vale em qualquer contexto. */
 const STRONG_OPT_OUT: RegExp[] = [
   /\b(pare|parem|parar|para de|pode parar)\b/,
   /\b(sair|me tira|me tire|tira meu|remove|remover|remova|removam|exclua|excluir)\b/,
@@ -45,7 +36,6 @@ const STRONG_OPT_OUT: RegExp[] = [
   /\bja (tenho|temos) (site|pagina|sistema|landing|fornecedor)\b/,
 ];
 
-/** Negativa simples ("não", "agora não") — opt-out apenas na primeira abordagem. */
 const SOFT_NEGATIVE: RegExp[] = [/^(nao|n|nop|nope|negativo|agora nao|nao agora|no momento nao|nao por enquanto|por enquanto nao)[.! ]*$/, /^(nao|n)[,.!]? obrigad/];
 
 const AUTO_REPLY: RegExp[] = [

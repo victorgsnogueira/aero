@@ -1,9 +1,6 @@
 import type { Service } from '@aero/shared';
 import type { QualificationQuestion } from '../../db/schema.ts';
 
-// Textos iniciais EDITÁVEIS. São copiados para a campanha na criação e, a partir
-// daí, vivem no banco — não há conteúdo comercial fixo no fluxo de envio.
-
 export const DEFAULT_FIRST_MESSAGE: Record<Service, string> = {
   landing_page: [
     'Olá! Sou {{remetente_nome}}, da {{remetente_empresa}}. Encontrei o contato comercial da {{empresa_lead}} no Google Maps.',
@@ -63,5 +60,4 @@ export const DEFAULT_QUALIFICATION_DONE =
 
 export const DEFAULT_DECLINE_ACK = 'Tudo bem, obrigado pelo retorno! Não enviaremos mais mensagens.';
 
-/** Domingo=0 … Sábado=6. Padrão: dias úteis. */
 export const DEFAULT_SEND_DAYS = [1, 2, 3, 4, 5];

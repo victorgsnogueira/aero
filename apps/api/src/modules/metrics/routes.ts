@@ -3,13 +3,7 @@ import { sql, type SQL } from 'drizzle-orm';
 import { SERVICES } from '@aero/shared';
 import { StringEnum } from '../../lib/schemas.ts';
 import type { Db } from '../../db/client.ts';
-
-// Indicadores. Convenções:
-//  - "contatos" = telefones únicos; "mensagens" = quantidade de mensagens.
-//  - Toda taxa traz numerador e denominador explícitos.
-//  - Valores monetários são agrupados por moeda (nunca somados entre moedas).
-//  - Entregas/leituras contam apenas confirmações recebidas do gateway.
-//  - Dados de demonstração ficam fora, salvo pedido explícito.
+import { commercialConversationScope } from '../inbox/scope.ts';
 
 const Filters = Type.Object({
   from: Type.Optional(Type.String({ format: 'date' })),
@@ -187,8 +181,8 @@ export const metricsRoutes: FastifyPluginAsyncTypebox = async (app) => {
   app.get('/attention', { schema: { tags: ['metrics'] } }, async () => {
     const r = await one(
       db,
-      sql`SELECT (SELECT COUNT(*) FROM conversations WHERE state = 'awaiting_human') AS awaiting_human,
-                 (SELECT COALESCE(SUM(unread_count),0) FROM conversations) AS unread,
+      sql`SELECT (SELECT COUNT(*) FROM conversations cv WHERE cv.state = 'awaiting_human' AND ${commercialConversationScope()}) AS awaiting_human,
+                 (SELECT COALESCE(SUM(cv.unread_count),0) FROM conversations cv WHERE ${commercialConversationScope()}) AS unread,
                  (SELECT COUNT(*) FROM messages WHERE status = 'unknown') AS unknown_sends,
                  (SELECT COUNT(*) FROM messages WHERE status = 'scheduled') AS scheduled,
                  (SELECT COUNT(*) FROM scans WHERE status IN ('queued','running','pausing','cancelling')) AS running_scans,

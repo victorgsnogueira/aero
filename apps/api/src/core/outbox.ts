@@ -3,10 +3,6 @@ import type { DbOrTx, Db } from '../db/client.ts';
 import { outbox } from '../db/schema.ts';
 import { TOPICS, type Queues, type Topic } from './queues.ts';
 
-// Outbox transacional: a intenção de executar uma tarefa é gravada na mesma
-// transação da mudança de negócio. Um relay publica na fila depois. Assim uma
-// queda entre o COMMIT e o enfileiramento não perde operações.
-
 export async function enqueue(
   tx: DbOrTx,
   topic: Topic,
@@ -20,7 +16,7 @@ export async function enqueue(
     availableAt: opts.availableAt ?? new Date(),
   };
   if (opts.dedupeKey) {
-    // Mesma chave pendente: não duplica a intenção.
+
     await tx.insert(outbox).values(values).onDuplicateKeyUpdate({ set: { dedupeKey: sql`dedupe_key` } });
   } else {
     await tx.insert(outbox).values(values);
@@ -29,7 +25,6 @@ export async function enqueue(
 
 const queueKeyByName = (queues: Queues, name: string) => Object.values(queues).find((q) => q.name === name);
 
-/** Publica intenções pendentes na fila. Idempotente: jobId = id do outbox. */
 export async function relayOutbox(db: Db, queues: Queues, limit = 100): Promise<number> {
   const rows = await db
     .select()
@@ -44,7 +39,7 @@ export async function relayOutbox(db: Db, queues: Queues, limit = 100): Promise<
     try {
       if (!queue) throw new Error(`Tópico sem fila: ${row.topic}`);
       await queue.add(row.topic, row.payload as Record<string, unknown>, { jobId: `outbox-${row.id}` });
-      // Libera a chave de deduplicação para futuras intenções do mesmo tipo
+
       await db.update(outbox).set({ publishedAt: new Date(), dedupeKey: null }).where(eq(outbox.id, row.id));
       published++;
     } catch (err) {

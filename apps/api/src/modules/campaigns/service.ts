@@ -40,11 +40,6 @@ export async function setParticipationStatus(
   }
 }
 
-/**
- * Adiciona empresas ao público da campanha (um registro por telefone).
- * Telefones já presentes na campanha não são duplicados. Telefones compartilhados
- * por várias empresas entram uma única vez.
- */
 export async function addAudience(db: Db, campaignId: number, sel: { companyIds?: number[]; filters?: LeadFilters }, limit = 5000): Promise<{ added: number; skipped: number }> {
   const campaign = await getCampaign(db, campaignId);
   if (campaign.status === 'completed' || campaign.status === 'cancelled') throw conflict('campaign_closed', 'Campanha encerrada');
@@ -55,7 +50,7 @@ export async function addAudience(db: Db, campaignId: number, sel: { companyIds?
   }
   if (companyIds.length === 0) return { added: 0, skipped: 0 };
   return db.transaction(async (tx) => {
-    // Dados de demonstração nunca entram em campanhas.
+
     const links = await tx
       .select({ companyId: companyPhones.companyId, phoneId: companyPhones.phoneId, formatStatus: phones.formatStatus })
       .from(companyPhones)
@@ -97,7 +92,6 @@ export async function removeFromAudience(db: Db, campaignId: number, ids: number
   });
 }
 
-/** Pré-condições para acionar uma campanha. */
 export async function assertCampaignReady(ctx: AppContext, c: Campaign): Promise<void> {
   const settings = await getSettings(ctx.db);
   assertOutreachReady(settings);
@@ -109,11 +103,6 @@ export async function assertCampaignReady(ctx: AppContext, c: Campaign): Promise
   if (preview.missing.length) throw precondition('template_missing_vars', `Variáveis sem valor configurado: ${preview.missing.join(', ')}`);
 }
 
-/**
- * Agenda a primeira abordagem para os contatos selecionados que estiverem elegíveis.
- * Usado ao ativar e periodicamente enquanto a campanha estiver ativa (contatos que
- * terminaram a validação). Nunca agenda dois envios para o mesmo telefone.
- */
 export async function scheduleEligible(ctx: AppContext, campaignId: number, limit = 200): Promise<{ scheduled: number; blocked: number; waiting: number }> {
   const settings = await getSettings(ctx.db);
   const result = { scheduled: 0, blocked: 0, waiting: 0 };
@@ -133,10 +122,10 @@ export async function scheduleEligible(ctx: AppContext, campaignId: number, limi
   let needsValidation = false;
   for (const row of selected) {
     await ctx.db.transaction(async (tx) => {
-      // Revalida com bloqueio da participação para evitar agendamento concorrente
+
       const [cc] = await tx.select().from(campaignContacts).where(eq(campaignContacts.id, row.cc.id)).for('update');
       if (!cc || cc.status !== 'selected') return;
-      // Bloqueio por telefone: serializa campanhas concorrentes disputando o mesmo número
+
       await tx.select({ id: phones.id }).from(phones).where(eq(phones.id, cc.phoneId)).for('update');
       const reasons = await checkEligibility(tx, {
         phoneId: cc.phoneId,
@@ -164,7 +153,7 @@ export async function scheduleEligible(ctx: AppContext, campaignId: number, limi
         await setParticipationStatus(tx, cc, 'blocked', 'system', `Variáveis sem valor: ${[...rendered.missing, ...rendered.unknown].join(', ')}`);
         return;
       }
-      // Envia para o JID confirmado pelo gateway na validação (pode diferir do E.164)
+
       const targetJid = row.phone.waJid ?? e164ToJid(row.phone.e164!);
       const conv = await ensureConversation(tx, { sessionId: session.id, phoneId: cc.phoneId, jid: targetJid, displayName: row.company.name });
       if (row.phone.waJid && conv.jid !== row.phone.waJid) {
@@ -224,11 +213,6 @@ export async function transitionCampaign(ctx: AppContext, id: number, to: Campai
   return getCampaign(ctx.db, id);
 }
 
-/**
- * Efeitos de concluir/cancelar: envios automáticos pendentes são cancelados e
- * participações que ainda não receberam a abordagem são encerradas. Conversas em
- * andamento e oportunidades permanecem (passam a depender de ação humana).
- */
 async function closeCampaignPending(tx: Tx, campaignId: number, to: 'completed' | 'cancelled'): Promise<void> {
   await tx
     .update(messages)
@@ -246,7 +230,6 @@ async function closeCampaignPending(tx: Tx, campaignId: number, to: 'completed' 
   for (const p of qualifying) await setParticipationStatus(tx, p, 'handed_off', 'system', 'Campanha encerrada durante a qualificação');
 }
 
-/** Envios pendentes cujo texto difere do modelo atual (para revisão explícita). */
 export async function pendingDivergence(ctx: AppContext, campaignId: number): Promise<{ messageId: number; current: string; updated: string; companyName: string }[]> {
   const campaign = await getCampaign(ctx.db, campaignId);
   if (!campaign.firstMessageTemplate) return [];
@@ -268,7 +251,6 @@ export async function pendingDivergence(ctx: AppContext, campaignId: number): Pr
   return out;
 }
 
-/** Aplica o modelo atual aos envios pendentes escolhidos (nunca automaticamente). */
 export async function applyTemplateToPending(ctx: AppContext, campaignId: number, messageIds: number[]): Promise<number> {
   const div = await pendingDivergence(ctx, campaignId);
   const chosen = div.filter((d) => messageIds.includes(d.messageId));

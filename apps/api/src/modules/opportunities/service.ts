@@ -30,7 +30,7 @@ export async function createOpportunity(
   },
 ): Promise<number> {
   if (input.campaignContactId) {
-    // Uma oportunidade por participação: reprocessar eventos não duplica.
+
     const [existing] = await tx.select({ id: opportunities.id }).from(opportunities).where(eq(opportunities.campaignContactId, input.campaignContactId));
     if (existing) return existing.id;
   }
@@ -52,10 +52,6 @@ export async function createOpportunity(
   return res!.id;
 }
 
-/**
- * Mudança de etapa com histórico. "Perdido" exige motivo. "Ganho" exige proposta
- * aceita (aceite e pagamento são registros independentes).
- */
 export async function changeStage(tx: DbOrTx, id: number, to: OpportunityStage, actor: Actor, reason: string | null, now: Date): Promise<void> {
   const [opp] = await tx.select().from(opportunities).where(eq(opportunities.id, id)).for('update');
   if (!opp) throw notFound('Oportunidade');
@@ -88,7 +84,6 @@ export async function getProposal(db: DbOrTx, id: number): Promise<Proposal> {
   return row;
 }
 
-/** Situação do pagamento derivada dos valores recebidos (na moeda da proposta). */
 export async function paymentStatus(db: DbOrTx, proposal: Proposal): Promise<{ status: PaymentStatus; receivedCents: number }> {
   const [r] = await db
     .select({ total: sql<string | null>`SUM(${payments.amountCents})` })

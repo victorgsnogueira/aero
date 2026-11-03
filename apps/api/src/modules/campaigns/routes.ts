@@ -128,8 +128,6 @@ export const campaignsRoutes: FastifyPluginAsyncTypebox = async (app) => {
     },
   );
 
-  // Configuração. Editar a oferta/modelos NÃO altera mensagens já enviadas nem
-  // ofertas já apresentadas; envios pendentes só mudam por revisão explícita.
   app.put('/:id', { schema: { tags: ['campaigns'], params: IdParams, body: CampaignConfig } }, async (req) => {
     const c = await getCampaign(db, req.params.id);
     if (c.status === 'completed' || c.status === 'cancelled') throw badRequest('campaign_closed', 'Campanha encerrada não pode ser editada');
@@ -233,7 +231,6 @@ export const campaignsRoutes: FastifyPluginAsyncTypebox = async (app) => {
     },
   );
 
-  /** Revisão de destinatários: elegibilidade atual dos selecionados, sem enviar nada. */
   app.get('/:id/eligibility', { schema: { tags: ['campaigns'], params: IdParams } }, async (req) => {
     const c = await getCampaign(db, req.params.id);
     const settings = await getSettings(db);

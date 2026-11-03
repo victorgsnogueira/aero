@@ -90,18 +90,18 @@ describe('normalização de telefone', () => {
 describe('janelas de envio com fuso explícito', () => {
   const w = { timezone: 'America/Sao_Paulo', days: [1, 2, 3, 4, 5], start: '09:00', end: '18:00' };
   test('respeita o fuso da campanha, não o do computador', () => {
-    assert.equal(isWithinWindow(new Date('2026-10-14T13:00:00Z'), w), true); // ter 10h SP
-    assert.equal(isWithinWindow(new Date('2026-10-14T22:00:00Z'), w), false); // ter 19h SP
-    assert.equal(isWithinWindow(new Date('2026-10-17T13:00:00Z'), w), false); // sábado
+    assert.equal(isWithinWindow(new Date('2026-10-14T13:00:00Z'), w), true);
+    assert.equal(isWithinWindow(new Date('2026-10-14T22:00:00Z'), w), false);
+    assert.equal(isWithinWindow(new Date('2026-10-17T13:00:00Z'), w), false);
   });
   test('próximo início de janela', () => {
-    const next = nextWindowStart(new Date('2026-10-16T22:30:00Z'), w); // sex 19h30 SP
-    assert.equal(next?.toISOString(), '2026-10-19T12:00:00.000Z'); // seg 9h SP
+    const next = nextWindowStart(new Date('2026-10-16T22:30:00Z'), w);
+    assert.equal(next?.toISOString(), '2026-10-19T12:00:00.000Z');
   });
   test('fuso de outra região', () => {
     const lisboa = { ...w, timezone: 'Europe/Lisbon' };
-    assert.equal(isWithinWindow(new Date('2026-10-14T08:30:00Z'), lisboa), true); // 9h30 Lisboa
-    assert.equal(isWithinWindow(new Date('2026-10-14T08:30:00Z'), w), false); // 5h30 SP
+    assert.equal(isWithinWindow(new Date('2026-10-14T08:30:00Z'), lisboa), true);
+    assert.equal(isWithinWindow(new Date('2026-10-14T08:30:00Z'), w), false);
   });
 });
 

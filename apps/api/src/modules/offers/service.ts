@@ -18,7 +18,6 @@ export async function getOffer(db: DbOrTx, id: number): Promise<Offer> {
   return row;
 }
 
-/** Cópia imutável da oferta no momento em que é apresentada. */
 export function snapshotOffer(o: Offer, now: Date): OfferSnapshot {
   return {
     offerId: o.id,

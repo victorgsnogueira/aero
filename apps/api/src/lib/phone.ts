@@ -11,11 +11,6 @@ export interface NormalizedPhone {
   lineType: string | null;
 }
 
-/**
- * Normaliza um telefone considerando o país de contexto (do endereço ou da varredura).
- * Nunca inventa DDI, DDD ou dígitos: números ambíguos ficam como `needs_review`
- * e números sem país identificável não são convertidos para E.164.
- */
 export function normalizePhone(rawInput: string, countryHint: string | null | undefined): NormalizedPhone {
   const raw = rawInput.trim();
   const digits = raw.replace(/\D/g, '');
@@ -86,12 +81,10 @@ export function normalizePhone(rawInput: string, countryHint: string | null | un
   }
 }
 
-/** JID pessoal do WhatsApp a partir do E.164 (sem '+'). */
 export function e164ToJid(e164: string): string {
   return `${e164.replace(/^\+/, '')}@s.whatsapp.net`;
 }
 
-/** Extrai o número de um JID pessoal (`5511999999999@s.whatsapp.net`, com ou sem `:device`). */
 export function jidToE164(jid: string): string | null {
   const m = /^(\d{6,15})(?::\d+)?@s\.whatsapp\.net$/.exec(jid);
   return m ? `+${m[1]}` : null;

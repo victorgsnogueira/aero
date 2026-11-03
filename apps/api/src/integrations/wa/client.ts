@@ -1,21 +1,6 @@
 import { HttpError, requestJson } from '../../lib/http.ts';
 import type { WaSessionStatus } from '@aero/shared';
 
-// Adaptador do WA-AKG v1.6.3 (commit 627a69f). Contratos verificados no código-fonte:
-//   Autenticação: cabeçalho X-API-Key.
-//   Respostas: { status: boolean, message, data }.
-//   GET  /api/sessions/{id}            -> data.status (status ao vivo: CONNECTED, SCAN_QR, ...), data.me
-//   POST /api/sessions                 {name, sessionId}
-//   GET  /api/sessions/{id}/qr         -> data.{qr, base64}; 400 se já conectado; 404 se ainda sem QR
-//   POST /api/sessions/{id}/{action}   start|stop|restart|logout
-//   POST /api/chat/{id}/check          {numbers[] (<=50)} -> data.results[{number, exists, jid, error?}]
-//                                      ATENÇÃO: em erro o gateway devolve exists:false + error -> tratamos como inconclusivo.
-//   POST /api/messages/{id}/{jid}/send {message: <conteúdo Baileys>} -> data = WAMessage {key:{id,remoteJid,fromMe}}
-//   POST /api/messages/{id}/{jid}/media multipart: file, type(image|video|audio|document), caption
-//   GET  /api/chat/{id}/{jid}          -> data: últimas 100 mensagens do banco do gateway
-//   GET/POST/PUT /api/webhooks/{id}[/{webhookId}]  {name, url, secret, events[]}
-//   POST /api/sessions/{id}/bot-config  configurações do bot embutido (desativado pelo aero)
-
 export interface GatewaySessionInfo {
   status: WaSessionStatus;
   rawStatus: string | null;
@@ -110,7 +95,7 @@ export function createWaGatewayClient(opts: { baseUrl: string; apiKey: string; t
     if (res && typeof res === 'object' && 'status' in res && res.status === false) {
       throw new HttpError('http', res.message ?? 'Gateway recusou a operação', 400, res);
     }
-    // Algumas rotas (ex.: /sessions/{id}/qr) respondem sem envelope { status, data }.
+
     if (res && typeof res === 'object' && 'data' in res) return (res as Envelope<T>).data;
     return res as unknown as T;
   }

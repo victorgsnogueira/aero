@@ -14,9 +14,6 @@ import { HttpError } from '../src/lib/http.ts';
 import { updateSettings } from '../src/modules/settings/service.ts';
 import { offers } from '../src/db/schema.ts';
 
-// Banco real e isolado (aero_test) + fakes controláveis das integrações externas.
-// Nenhum teste fala com o scraper, o gateway ou o WhatsApp reais.
-
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const fixture = (name: string) => readFileSync(path.join(here, 'fixtures', name), 'utf8');
 
@@ -133,7 +130,7 @@ let migrated = false;
 export async function createTestEnv(overrides: Partial<AppConfig> = {}): Promise<TestEnv> {
   const url = testDatabaseUrl();
   if (!migrated) {
-    // Recria o schema do zero uma vez por execução
+
     const h = createDb(url, { connectionLimit: 1 });
     await h.db.execute(sql`SET FOREIGN_KEY_CHECKS = 0`);
     const [tables] = await h.db.execute(sql`SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATABASE()`);
@@ -146,7 +143,7 @@ export async function createTestEnv(overrides: Partial<AppConfig> = {}): Promise
   await truncateAll(handle);
   const wa = createFakeWa();
   const scraper = createFakeScraper();
-  const clock = { now: new Date('2026-10-14T13:00:00Z') }; // terça, 10h em São Paulo
+  const clock = { now: new Date('2026-10-14T13:00:00Z') };
   const config: AppConfig = {
     env: 'test',
     host: '127.0.0.1',
@@ -183,7 +180,6 @@ async function truncateAll(h: DbHandle) {
   await h.db.execute(sql`SET FOREIGN_KEY_CHECKS = 1`);
 }
 
-/** Configuração mínima de operação + uma oferta por serviço. */
 export async function seedBasics(env: TestEnv): Promise<{ landingOfferId: number; saasOfferId: number }> {
   await updateSettings(env.ctx.db, { senderName: 'Ana Teste', companyName: 'Estúdio Teste', validationMinIntervalMs: 0 });
   const [a] = await env.ctx.db

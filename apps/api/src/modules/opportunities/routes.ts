@@ -66,7 +66,6 @@ export const opportunitiesRoutes: FastifyPluginAsyncTypebox = async (app) => {
     },
   );
 
-  /** Propostas de todas as oportunidades, com situação de pagamento derivada. */
   app.get(
     '/proposals',
     { schema: { tags: ['opportunities'], querystring: Merge(Pagination, Type.Object({ status: Type.Optional(StringEnum(PROPOSAL_STATUSES)) })) } },
@@ -194,7 +193,6 @@ export const opportunitiesRoutes: FastifyPluginAsyncTypebox = async (app) => {
     },
   );
 
-  // Propostas: guardam valores próprios — não dependem de valores mutáveis da campanha.
   app.post('/:id/proposals', { schema: { tags: ['opportunities'], params: IdParams, body: ProposalBody } }, async (req, reply) => {
     const o = await getOpportunity(db, req.params.id);
     const id = await db.transaction(async (tx) => {
@@ -212,10 +210,6 @@ export const opportunitiesRoutes: FastifyPluginAsyncTypebox = async (app) => {
     return { ok: true };
   });
 
-  /**
-   * Situação da proposta. Ao aceitar, a oportunidade vai para "Ganho"
-   * automaticamente; o pagamento continua independente (pendente até registro).
-   */
   app.post(
     '/proposals/:id/status',
     { schema: { tags: ['opportunities'], params: IdParams, body: Type.Object({ status: StringEnum(PROPOSAL_STATUSES), reason: Nullable(Type.String({ maxLength: 255 })) }) } },

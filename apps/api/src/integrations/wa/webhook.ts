@@ -1,8 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-// Verificação do webhook do WA-AKG: cabeçalho `X-Webhook-Signature: sha256=<hex>`
-// com HMAC-SHA256 do corpo bruto usando o segredo cadastrado (lib/webhook.ts do gateway).
-
 export function verifyWebhookSignature(rawBody: Buffer | string, header: string | undefined, secret: string): boolean {
   if (!secret || !header) return false;
   const m = /^sha256=([a-f0-9]{64})$/i.exec(header.trim());
@@ -23,10 +20,6 @@ export interface WaWebhookPayload {
   data: Record<string, unknown>;
 }
 
-/**
- * Chave de deduplicação estável por evento. Reentregas e duplicatas
- * (o gateway pode disparar `message.sent` duas vezes) colapsam na mesma chave.
- */
 export function webhookEventKey(p: WaWebhookPayload): string | null {
   const d = p.data ?? {};
   const key = (d.key ?? {}) as { id?: string };

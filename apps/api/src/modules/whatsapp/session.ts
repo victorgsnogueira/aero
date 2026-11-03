@@ -6,9 +6,6 @@ import { WEBHOOK_EVENTS } from '../../integrations/wa/client.ts';
 import { precondition } from '../../core/errors.ts';
 import type { WaSessionStatus } from '@aero/shared';
 
-// Uma sessão inicial (o número do proprietário). O registro em `wa_sessions`
-// permite associar conversas a uma sessão sem criar gestão multiusuário.
-
 export type WaSessionRow = typeof waSessions.$inferSelect;
 
 export const getSessionKey = (ctx: AppContext) => ctx.config.gateway.sessionId;
@@ -21,7 +18,6 @@ export async function ensureSessionRow(db: DbOrTx, sessionKey: string): Promise<
   return created!;
 }
 
-/** Consulta o gateway e grava o estado atual. Nunca lança por indisponibilidade. */
 export async function syncSessionStatus(ctx: AppContext): Promise<WaSessionRow> {
   const key = getSessionKey(ctx);
   const row = await ensureSessionRow(ctx.db, key);
@@ -41,10 +37,6 @@ export async function syncSessionStatus(ctx: AppContext): Promise<WaSessionRow> 
   return { ...row, status, ownJid, lastError };
 }
 
-/**
- * Cria a sessão no gateway (se ausente), desativa o bot embutido (para não
- * duplicar regras do aero) e registra o webhook interno com segredo HMAC.
- */
 export async function provisionSession(ctx: AppContext): Promise<WaSessionRow> {
   const key = getSessionKey(ctx);
   if (!ctx.config.gateway.apiKey) throw precondition('gateway_not_configured', 'WA_GATEWAY_API_KEY não configurada');

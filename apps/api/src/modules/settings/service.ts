@@ -19,7 +19,6 @@ export async function updateSettings(db: DbOrTx, patch: Partial<Omit<OperatorSet
   return getSettings(db);
 }
 
-/** Configurações obrigatórias para qualquer abordagem comercial. */
 export function missingOutreachSettings(s: OperatorSettings): string[] {
   const missing: string[] = [];
   if (!s.senderName?.trim()) missing.push('Nome do remetente');

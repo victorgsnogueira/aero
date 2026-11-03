@@ -3005,6 +3005,145 @@
       }
     },
     "/api/leads/": {
+      "post": {
+        "tags": [
+          "leads"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "clientKey"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255,
+                    "pattern": "\\S"
+                  },
+                  "category": {
+                    "type": "string",
+                    "maxLength": 191,
+                    "nullable": true
+                  },
+                  "address": {
+                    "type": "string",
+                    "maxLength": 512,
+                    "nullable": true
+                  },
+                  "neighborhood": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "nullable": true
+                  },
+                  "city": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "nullable": true
+                  },
+                  "state": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "nullable": true
+                  },
+                  "postalCode": {
+                    "type": "string",
+                    "maxLength": 32,
+                    "nullable": true
+                  },
+                  "countryCode": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}$",
+                    "nullable": true
+                  },
+                  "website": {
+                    "type": "string",
+                    "maxLength": 512,
+                    "nullable": true
+                  },
+                  "mapsUrl": {
+                    "type": "string",
+                    "maxLength": 1024,
+                    "nullable": true
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90,
+                    "nullable": true
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180,
+                    "nullable": true
+                  },
+                  "rating": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 5,
+                    "nullable": true
+                  },
+                  "reviewCount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "nullable": true
+                  },
+                  "timezone": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "nullable": true
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 10000,
+                    "nullable": true
+                  },
+                  "phones": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64,
+                      "pattern": "\\S"
+                    },
+                    "maxItems": 20
+                  },
+                  "clientKey": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9-]{8,64}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "get": {
         "tags": [
           "leads"
@@ -3130,11 +3269,27 @@
             "schema": {
               "enum": [
                 "recent",
-                "name"
+                "name",
+                "category",
+                "phone",
+                "whatsapp",
+                "local",
+                "situation"
               ]
             },
             "in": "query",
             "name": "sort",
+            "required": false
+          },
+          {
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            },
+            "in": "query",
+            "name": "direction",
             "required": false
           }
         ],
@@ -3277,6 +3432,55 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/leads/{id}/phones": {
+      "post": {
+        "tags": [
+          "leads"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phone"
+                ],
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "\\S"
+                  },
+                  "countryCode": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}$",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
           }
         }
       }
@@ -3704,10 +3908,86 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "notes"
-                ],
                 "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255,
+                    "pattern": "\\S"
+                  },
+                  "category": {
+                    "type": "string",
+                    "maxLength": 191,
+                    "nullable": true
+                  },
+                  "address": {
+                    "type": "string",
+                    "maxLength": 512,
+                    "nullable": true
+                  },
+                  "neighborhood": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "nullable": true
+                  },
+                  "city": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "nullable": true
+                  },
+                  "state": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "nullable": true
+                  },
+                  "postalCode": {
+                    "type": "string",
+                    "maxLength": 32,
+                    "nullable": true
+                  },
+                  "countryCode": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}$",
+                    "nullable": true
+                  },
+                  "website": {
+                    "type": "string",
+                    "maxLength": 512,
+                    "nullable": true
+                  },
+                  "mapsUrl": {
+                    "type": "string",
+                    "maxLength": 1024,
+                    "nullable": true
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90,
+                    "nullable": true
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180,
+                    "nullable": true
+                  },
+                  "rating": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 5,
+                    "nullable": true
+                  },
+                  "reviewCount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "nullable": true
+                  },
+                  "timezone": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "nullable": true
+                  },
                   "notes": {
                     "type": "string",
                     "maxLength": 10000,
@@ -4257,8 +4537,8 @@
                       },
                       "audienceFilters": {
                         "type": "object",
-                        "additionalProperties": {},
-                        "nullable": true
+                        "nullable": true,
+                        "additionalProperties": {}
                       },
                       "id": {
                         "type": "integer"
@@ -4501,8 +4781,8 @@
                   },
                   "audienceFilters": {
                     "type": "object",
-                    "additionalProperties": {},
-                    "nullable": true
+                    "nullable": true,
+                    "additionalProperties": {}
                   }
                 }
               }
@@ -4941,6 +5221,50 @@
       }
     },
     "/api/inbox/conversations": {
+      "post": {
+        "tags": [
+          "inbox"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phoneId"
+                ],
+                "properties": {
+                  "phoneId": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "get": {
         "tags": [
           "inbox"

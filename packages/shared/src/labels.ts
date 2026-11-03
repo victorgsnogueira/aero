@@ -17,8 +17,6 @@ import type {
   WaStatus,
 } from './enums.ts';
 
-// Rótulos em português do Brasil para os estados exibidos na interface.
-
 export const SERVICE_LABELS: Record<Service, string> = {
   landing_page: 'Landing page',
   micro_saas: 'Sistema sob medida (micro SaaS)',

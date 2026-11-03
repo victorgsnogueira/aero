@@ -9,6 +9,8 @@ import { recoverStuckProcessing, reconcileUnknown } from '../src/modules/messagi
 import { processWebhookEvent } from '../src/modules/automation/inbound.ts';
 import { closeNoReply } from '../src/modules/automation/maintenance.ts';
 import { importPlaces } from '../src/modules/scans/importer.ts';
+import { ensureConversation } from '../src/modules/inbox/conversations.ts';
+import { ensureSessionRow } from '../src/modules/whatsapp/session.ts';
 import { parseScraperCsv } from '../src/integrations/scraper/csv.ts';
 import { signWebhookBody } from '../src/integrations/wa/webhook.ts';
 import { createTestEnv, seedBasics, timeoutError, fixture, type TestEnv } from './helpers.ts';
@@ -24,7 +26,6 @@ async function api<T = Record<string, unknown>>(method: 'GET' | 'POST' | 'PUT' |
   return { status: res.statusCode, body: res.json() as T };
 }
 
-/** Empresa com telefone validado (WhatsApp encontrado agora). */
 async function lead(name: string, e164: string, opts: { validated?: boolean } = {}): Promise<{ companyId: number; phoneId: number }> {
   const [c] = await env.ctx.db.insert(companies).values({ name, sourcePlaceId: `test:${name}`, city: 'São Paulo', category: 'Dentista', latitude: '-23.5', longitude: '-46.6' }).$returningId();
   await env.ctx.db
@@ -57,7 +58,6 @@ async function sendAll(maxTicks = 20) {
   }
 }
 
-/** Envia um webhook assinado como o gateway faria e processa o evento. */
 async function webhook(event: string, data: Record<string, unknown>) {
   const payload = JSON.stringify({ event, sessionId: 'aero-test', timestamp: new Date().toISOString(), data });
   const res = await app.inject({
@@ -121,12 +121,10 @@ describe('campanhas, envio e automação', () => {
     assert.equal(cc2.offerSnapshot?.priceCents, 79000);
     assert.match(env.wa.sent.find((s) => s.jid.startsWith('5511911110001'))!.text, /Clínica A/);
 
-    // Edita o preço da oferta da campanha 1
     const upd = await api('PUT', `/offers/${offerIds.landingOfferId}`, { service: 'landing_page', name: 'Landing Essencial', description: null, scope: null, priceType: 'fixed', priceCents: 150000, setupCents: null, monthlyCents: null, currency: 'BRL', conditions: null, validUntil: null });
     assert.equal(upd.status, 200);
     assert.equal((await ccOf(c1, a.phoneId)).offerSnapshot?.priceCents, 99000, 'snapshot não muda');
 
-    // Interessado: oportunidade e proposta usam a oferta apresentada
     await inbound('+5511911110001', 'Pode mandar');
     const [opp] = await env.ctx.db.select().from(opportunities).where(eq(opportunities.campaignContactId, cc1.id));
     assert.equal(opp!.offerSnapshot?.priceCents, 99000);
@@ -144,7 +142,6 @@ describe('campanhas, envio e automação', () => {
     await sendAll();
     assert.equal(env.wa.sent.length, 1);
 
-    // Duas empresas com o mesmo telefone em uma campanha: um único envio
     const y1 = await lead('Matriz Y', '+5511922220002');
     const [y2c] = await env.ctx.db.insert(companies).values({ name: 'Filial Y', sourcePlaceId: 'test:filial' }).$returningId();
     await env.ctx.db.insert(companyPhones).values({ companyId: y2c!.id, phoneId: y1.phoneId, rawValue: '+5511922220002' });
@@ -158,7 +155,7 @@ describe('campanhas, envio e automação', () => {
     const b = await lead('Clínica W', '+5511933330002');
     const c = await campaign('Z', 'landing_page', offerIds.landingOfferId);
     await addAndActivate(c, [a.companyId, b.companyId]);
-    // Antes do envio para W, W escreve: a abordagem pendente é suspensa
+
     await inbound('+5511933330002', 'Oi, quem é?');
     await sendAll();
     assert.equal(env.wa.sent.length, 1, 'somente Z recebe a abordagem');
@@ -166,7 +163,6 @@ describe('campanhas, envio e automação', () => {
     const firstW = (await msgsOf(convW.id)).find((m) => m.purpose === 'first_contact')!;
     assert.equal(firstW.status, 'cancelled');
 
-    // Mesmo webhook duas vezes
     const r1 = await inbound('+5511933330001', 'Pode mandar', 'DUP-1');
     const r2 = await inbound('+5511933330001', 'Pode mandar', 'DUP-1');
     assert.equal(r1.duplicate, false);
@@ -177,7 +173,6 @@ describe('campanhas, envio e automação', () => {
     const opps = await env.ctx.db.select().from(opportunities).where(eq(opportunities.conversationId, convZ.id));
     assert.equal(opps.length, 1, 'uma oportunidade');
 
-    // Estados: aceito -> lido chega antes de entregue (fora de ordem) -> não rebaixa
     const first = (await msgsOf(convZ.id)).find((m) => m.purpose === 'first_contact')!;
     assert.equal(first.status, 'accepted', 'aceito pelo gateway não é entrega');
     await webhook('message.status', { keyId: first.externalId, remoteJid: 'x', status: 'READ' });
@@ -211,12 +206,10 @@ describe('campanhas, envio e automação', () => {
     const sup = await env.ctx.db.select().from(suppressions).where(eq(suppressions.phoneId, a.phoneId));
     assert.equal(sup.length, 1);
 
-    // Reimporta um CSV que contém o mesmo telefone
     const csv = fixture('scraper-sample.csv').replace('(11) 91234-5678', '(11) 95555-0001');
     await env.ctx.db.transaction((tx) => importPlaces(tx, { scanId: 999, scanUnitId: 999, countryCode: 'BR', phoneTarget: null, countedPhones: 0, now: env.clock.now }, parseScraperCsv(csv)));
     assert.equal((await env.ctx.db.select().from(suppressions).where(eq(suppressions.phoneId, a.phoneId))).length, 1, 'supressão mantida');
 
-    // Nova campanha não aborda
     const c2 = await campaign('R2', 'micro_saas', offerIds.saasOfferId);
     await addAndActivate(c2, [a.companyId]);
     const p = await ccOf(c2, a.phoneId);
@@ -272,7 +265,7 @@ describe('campanhas, envio e automação', () => {
     assert.equal(manual.status, 200);
     assert.equal(manual.body.status, 'accepted');
     assert.equal(manual.body.origin, 'manual');
-    // Idempotência do envio manual (duplo clique / reenvio da requisição)
+
     await api('POST', `/inbox/conversations/${conv.id}/messages`, { text: 'Olá, aqui é a Ana.', clientKey: 'manual-key-0001' });
     assert.equal(env.wa.sent.filter((s) => s.text === 'Olá, aqui é a Ana.').length, 1);
     const view = await api<{ messages: { origin: string; status: string }[] }>('GET', `/inbox/conversations/${conv.id}`);
@@ -294,13 +287,11 @@ describe('campanhas, envio e automação', () => {
     await sendAll();
     assert.equal(env.wa.sent.length, 0, 'sem reenvio cego');
 
-    // Reconciliação encontra a mensagem no histórico do gateway
     env.wa.history = [{ keyId: 'RECON-1', remoteJid: conv.jid, fromMe: true, content: m.body, status: 'SENT', timestamp: env.clock.now.toISOString() }];
     env.clock.now = new Date(m.sentAt!.getTime() + 60_000);
     assert.equal(await reconcileUnknown(env.ctx), 1);
     assert.equal((await msgsOf(conv.id)).find((x) => x.id === m.id)!.status, 'accepted');
 
-    // Envio preso em "processing" (worker caiu no meio) vira desconhecido
     await env.ctx.db.update(messages).set({ status: 'processing', lockedAt: new Date(env.clock.now.getTime() - 10 * 60_000) }).where(eq(messages.id, m.id));
     assert.equal(await recoverStuckProcessing(env.ctx), 1);
   });
@@ -352,7 +343,7 @@ describe('campanhas, envio e automação', () => {
 
   test('mensagens de sistema e conversa consigo mesmo não entram na caixa de entrada', async () => {
     const own = '5512981647076@s.whatsapp.net';
-    // Sincronização de histórico ao parear (conteúdo vazio, protocolMessage)
+
     await webhook('message.received', {
       key: { id: 'SYS-1', remoteJid: '105681998839873@lid' },
       from: '105681998839873@lid',
@@ -362,7 +353,7 @@ describe('campanhas, envio e automação', () => {
       content: '',
       raw: { key: { id: 'SYS-1', remoteJid: '105681998839873@lid', addressingMode: 'lid' }, message: { protocolMessage: { type: 'HISTORY_SYNC_NOTIFICATION' }, messageContextInfo: {} } },
     });
-    // Mensagem do próprio número para si mesmo
+
     await webhook('message.received', { key: { id: 'SELF-1' }, from: own, receiver: own, chatType: 'PERSONAL', type: 'TEXT', content: 'nota para mim', raw: { message: { conversation: 'nota para mim' } } });
     assert.equal((await env.ctx.db.select().from(conversations)).length, 0);
     assert.equal((await env.ctx.db.select().from(messages)).length, 0);
@@ -380,11 +371,18 @@ describe('campanhas, envio e automação', () => {
     });
     const conv = await convOf(a.phoneId);
     assert.ok(conv, 'conversa associada ao telefone cadastrado');
+    assert.equal(conv.lid, '200000000000001@lid');
+    await webhook('message.received', { key: { id: 'LID-SEM-ALT' }, from: '200000000000001@lid', chatType: 'PERSONAL', type: 'TEXT', content: 'Outra informação' });
+    await webhook('message.sent', { key: { id: 'LID-DO-CELULAR' }, receiver: '200000000000001@lid', chatType: 'PERSONAL', type: 'TEXT', content: 'Vou verificar' });
     assert.equal((await env.ctx.db.select().from(conversations)).length, 1);
+    assert.equal((await msgsOf(conv.id)).length, 3);
+    assert.equal((await convOf(a.phoneId)).automationPaused, true);
   });
 
   test('lista de teste bloqueia envio manual para contato sem número (somente LID)', async () => {
     env.ctx.config.sending.allowlist = ['+5512991810649'];
+    const a = await lead('Lead identificado por LID', '+5512991810648');
+    await env.ctx.db.update(phones).set({ e164: null, waJid: '300000000000001@lid' }).where(eq(phones.id, a.phoneId));
     await webhook('message.received', {
       key: { id: 'LID-2', remoteJid: '300000000000001@lid' },
       from: '300000000000001@lid',
@@ -398,6 +396,58 @@ describe('campanhas, envio e automação', () => {
     assert.equal(r.body.status, 'failed');
     assert.equal(env.wa.sent.length, 0, 'nada enviado');
     env.ctx.config.sending.allowlist = [];
+  });
+
+  test('mensagens pessoais recebidas e enviadas pelo celular não cadastram contatos nem conversas', async () => {
+    await inbound('+5511999990011', 'Mensagem pessoal');
+    await webhook('message.sent', { key: { id: 'AMIGO-OUT' }, receiver: '5511999990011@s.whatsapp.net', chatType: 'PERSONAL', type: 'TEXT', content: 'Resposta pessoal' });
+    await webhook('message.received', { key: { id: 'AMIGO-LID-IN' }, from: '400000000000001@lid', chatType: 'PERSONAL', type: 'TEXT', content: 'Oi' });
+    await webhook('message.sent', { key: { id: 'AMIGO-LID-OUT' }, receiver: '400000000000001@lid', chatType: 'PERSONAL', type: 'TEXT', content: 'Oi' });
+    assert.equal((await env.ctx.db.select().from(phones)).length, 0);
+    assert.equal((await env.ctx.db.select().from(conversations)).length, 0);
+    assert.equal((await env.ctx.db.select().from(messages)).length, 0);
+    assert.equal((await env.ctx.db.select().from(suppressions)).length, 0);
+    assert.equal(env.wa.sent.length, 0);
+  });
+
+  test('conversa pessoal antiga fica fora da lista, busca e contadores e não recebe novas mensagens', async () => {
+    const session = await ensureSessionRow(env.ctx.db, 'aero-test');
+    const [personal] = await env.ctx.db.insert(phones).values({ e164: '+5511999990012', dedupeKey: '+5511999990012', rawSample: '+5511999990012', formatStatus: 'valid', waStatus: 'found', waJid: '5511999990012@s.whatsapp.net' }).$returningId();
+    const orphan = await ensureConversation(env.ctx.db, { sessionId: session.id, phoneId: personal!.id, jid: '5511999990012@s.whatsapp.net', displayName: 'Amigo pessoal' });
+    await env.ctx.db.update(conversations).set({ unreadCount: 7, state: 'awaiting_human' }).where(eq(conversations.id, orphan.id));
+    await env.ctx.db.insert(messages).values({ conversationId: orphan.id, direction: 'in', origin: 'contact', status: 'received', body: 'Histórico pessoal', occurredAt: env.clock.now });
+    await inbound('+5511999990012', 'Não quero');
+    await webhook('message.sent', { key: { id: 'AMIGO-ANTIGO-OUT' }, receiver: '5511999990012@s.whatsapp.net', chatType: 'PERSONAL', type: 'TEXT', content: 'Resposta pessoal' });
+    const a = await lead('Cliente comercial', '+5511999990013');
+    await inbound('+5511999990013', 'Preciso de uma página');
+    const list = await api<{ items: { id: number }[]; total: number; totalUnread: number }>('GET', '/inbox/conversations');
+    assert.equal(list.body.total, 1);
+    assert.deepEqual(list.body.items.map((c) => c.id), [(await convOf(a.phoneId)).id]);
+    assert.equal(list.body.totalUnread, 1);
+    const search = await api<{ total: number; totalUnread: number }>('GET', '/inbox/conversations?q=Amigo');
+    assert.equal(search.body.total, 0);
+    assert.equal(search.body.totalUnread, 1);
+    const attention = await api<{ unread: number; awaiting_human: number }>('GET', '/metrics/attention');
+    assert.equal(attention.body.unread, 1);
+    assert.equal(attention.body.awaiting_human, 1);
+    assert.equal((await api('GET', `/inbox/conversations/${orphan.id}`)).status, 404);
+    assert.equal((await msgsOf(orphan.id)).length, 1);
+    assert.equal((await env.ctx.db.select().from(suppressions)).length, 0);
+    assert.equal(env.wa.sent.length, 0);
+  });
+
+  test('abertura explícita no Aero preserva o atendimento de um contato sem empresa vinculada', async () => {
+    const [phone] = await env.ctx.db.insert(phones).values({ e164: '+5511999990014', dedupeKey: '+5511999990014', rawSample: '+5511999990014', formatStatus: 'valid', waStatus: 'found', waJid: '5511999990014@s.whatsapp.net', waCheckedAt: env.clock.now }).$returningId();
+    const opened = await api<{ id: number }>('POST', '/inbox/conversations', { phoneId: phone!.id });
+    assert.equal(opened.status, 201);
+    await inbound('+5511999990014', 'Olá');
+    await webhook('message.sent', { key: { id: 'CONTATO-ABERTO-OUT' }, receiver: '5511999990014@s.whatsapp.net', chatType: 'PERSONAL', type: 'TEXT', content: 'Vou ajudar' });
+    const list = await api<{ items: { id: number }[]; total: number }>('GET', '/inbox/conversations');
+    assert.equal(list.body.total, 1);
+    assert.equal(list.body.items[0]!.id, opened.body.id);
+    assert.equal((await msgsOf(opened.body.id)).length, 2);
+    assert.equal((await convOf(phone!.id)).automationPaused, true);
+    assert.equal(env.wa.sent.length, 0);
   });
 
   test('mensagem automática do destinatário não avança a abordagem', async () => {

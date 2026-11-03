@@ -1,7 +1,6 @@
 import { Type, type FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import { sql } from 'drizzle-orm';
 
-// /health/live: processo no ar.  /health/ready: dependências essenciais prontas.
 export const healthRoutes: FastifyPluginAsyncTypebox = async (app) => {
   app.get('/live', { schema: { tags: ['health'] } }, async () => ({ status: 'ok' }));
 

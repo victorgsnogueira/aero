@@ -7,6 +7,7 @@ import { scanTick } from '../src/modules/scans/orchestrator.ts';
 import { runValidation } from '../src/modules/validation/service.ts';
 import { suppressPhone } from '../src/modules/leads/suppression.ts';
 import { createOpportunity } from '../src/modules/opportunities/service.ts';
+import { updateSettings } from '../src/modules/settings/service.ts';
 import { createTestEnv, seedBasics, timeoutError, type TestEnv } from './helpers.ts';
 
 const baseScan = {
@@ -62,14 +63,12 @@ describe('varreduras e importação', () => {
     const companiesAfterFirst = await count(env, companies);
     assert.equal(companiesAfterFirst, 7, '8 linhas no CSV, uma repetida (mesmo place_id)');
 
-    // Histórico comercial: anotação, oportunidade e supressão
     const [p1] = await env.ctx.db.select().from(companies).where(eq(companies.sourcePlaceId, 'ChIJ_test_p1'));
     await env.ctx.db.update(companies).set({ notes: 'Falar com a Dra. Paula' }).where(eq(companies.id, p1!.id));
     await createOpportunity(env.ctx.db, { companyId: p1!.id, service: 'landing_page', title: 'Opp teste', stage: 'qualification', actor: 'owner' });
     const [ph] = await env.ctx.db.select().from(phones).where(eq(phones.e164, '+5511912345678'));
     await env.ctx.db.transaction((tx) => suppressPhone(tx, { phoneId: ph!.id, reason: 'recusa', actor: 'contact', now: env.clock.now }));
 
-    // Nova varredura com a mesma consulta, sem reaproveitar (força nova coleta)
     env.clock.now = new Date(env.clock.now.getTime() + 48 * 3600_000);
     const s2 = await createScan(env.ctx.db, { ...baseScan, name: 'Reimportação' });
     await startScan(env.ctx.db, s2, env.clock.now);
@@ -98,7 +97,7 @@ describe('varreduras e importação', () => {
   });
 
   test('cenário 2: meta de números únicos ≠ meta de WhatsApps confirmados; excedente preservado', async () => {
-    // Números válidos únicos no fixture: +5511987654321 (compartilhado), +551133334444, +5511912345678 => 3
+
     const s = await createScan(env.ctx.db, { ...baseScan, targetCount: 2 });
     await startScan(env.ctx.db, s, env.clock.now);
     await runToEnd(env, s);
@@ -108,7 +107,6 @@ describe('varreduras e importação', () => {
     assert.ok(scan.surplus >= 1, 'excedente marcado e salvo');
     assert.equal(await count(env, companies), 7, 'excedente também fica na base');
 
-    // Meta de WhatsApp confirmado: um número inexistente, outro inconclusivo
     env.wa.checkImpl = async (numbers) =>
       numbers.map((n) =>
         n === '551133334444'
@@ -141,7 +139,6 @@ describe('varreduras e importação', () => {
     assert.ok(rows.every((p) => p.waStatus === 'inconclusive'), 'timeout => inconclusivo');
     assert.ok(rows.every((p) => p.waStatus !== 'not_found'));
 
-    // Sessão desconectada: não consulta e não altera estados
     env.wa.sessionStatus = 'disconnected';
     env.clock.now = new Date(env.clock.now.getTime() + 3600_000);
     const r2 = await runValidation(env.ctx, { kind: 'scan', scanId: s }, { sleep: async () => {} });
@@ -157,11 +154,38 @@ describe('varreduras e importação', () => {
     assert.equal(env.wa.sent.length, 0);
   });
 
+  test('validação manual avança entre lotes e encerra sem consultar novamente os números atuais', async () => {
+    const s = await createScan(env.ctx.db, baseScan);
+    await startScan(env.ctx.db, s, env.clock.now);
+    await runToEnd(env, s);
+    await updateSettings(env.ctx.db, { validationBatchSize: 1 });
+    const selected = await env.ctx.db.select().from(phones).where(eq(phones.formatStatus, 'valid'));
+    const queried: string[] = [];
+    env.wa.checkImpl = async (numbers) => {
+      queried.push(...numbers);
+      return numbers.map((number) => ({ number, outcome: 'found', jid: `${number}@s.whatsapp.net`, error: null }));
+    };
+    const scope = { kind: 'phones' as const, phoneIds: selected.map((phone) => phone.id) };
+    const result = await runValidation(env.ctx, scope, { sleep: async () => {} });
+    assert.equal(result.checked, selected.length);
+    assert.equal(result.remaining, 0);
+    assert.equal(new Set(queried).size, selected.length);
+    assert.equal(queried.length, selected.length);
+    const repeated = await runValidation(env.ctx, scope, { sleep: async () => {} });
+    assert.equal(repeated.checked, 0);
+    assert.equal(repeated.remaining, 0);
+    await env.ctx.db.update(phones).set({ waStatus: 'pending' }).where(eq(phones.id, selected[0]!.id));
+    const requestedAgain = await runValidation(env.ctx, scope, { sleep: async () => {} });
+    assert.equal(requestedAgain.checked, 1);
+    assert.equal(requestedAgain.remaining, 0);
+    assert.equal(env.wa.sent.length, 0);
+  });
+
   test('cancelamento e limites de esforço encerram com motivo', async () => {
-    env.scraper.autoComplete = false; // jobs ficam pendentes no coletor
+    env.scraper.autoComplete = false;
     const s = await createScan(env.ctx.db, { ...baseScan, maxDurationMinutes: 5 });
     await startScan(env.ctx.db, s, env.clock.now);
-    await scanTick(env.ctx, s); // submete a unidade
+    await scanTick(env.ctx, s);
     env.clock.now = new Date(env.clock.now.getTime() + 10 * 60_000);
     await runToEnd(env, s);
     const scan = await getScan(env.ctx.db, s);

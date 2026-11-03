@@ -4,10 +4,6 @@ import { campaignContacts, campaigns, conversations, webhookEvents } from '../..
 import { setParticipationStatus, scheduleEligible } from '../campaigns/service.ts';
 import { enqueue } from '../../core/outbox.ts';
 
-/**
- * Regra 3: sem resposta, NENHUM follow-up automático. Após o prazo configurado
- * da campanha a participação é encerrada; o histórico é preservado.
- */
 export async function closeNoReply(ctx: AppContext): Promise<number> {
   const rows = await ctx.db
     .select({ cc: campaignContacts, hours: campaigns.noReplyCloseHours })
@@ -32,7 +28,6 @@ export async function closeNoReply(ctx: AppContext): Promise<number> {
   return closed;
 }
 
-/** Campanhas ativas: agenda contatos selecionados que ficaram elegíveis (ex.: após validação). */
 export async function schedulePendingForActiveCampaigns(ctx: AppContext): Promise<number> {
   const active = await ctx.db
     .select({ id: campaigns.id })
@@ -43,7 +38,6 @@ export async function schedulePendingForActiveCampaigns(ctx: AppContext): Promis
   return total;
 }
 
-/** Webhooks persistidos e ainda não processados (ex.: worker parado) voltam à fila. */
 export async function requeueUnprocessedWebhooks(ctx: AppContext): Promise<number> {
   const cutoff = new Date(ctx.now().getTime() - 2 * 60_000);
   const rows = await ctx.db

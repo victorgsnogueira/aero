@@ -1,6 +1,3 @@
-// Estados e vocabulários compartilhados entre API, workers e interface.
-// Mantidos como tuplas `as const` (sem enums do TS) para funcionar com type stripping.
-
 export const SERVICES = ['landing_page', 'micro_saas'] as const;
 export type Service = (typeof SERVICES)[number];
 
@@ -48,7 +45,6 @@ export type WaStatus = (typeof WA_STATUSES)[number];
 export const CAMPAIGN_STATUSES = ['draft', 'active', 'paused', 'completed', 'cancelled'] as const;
 export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
 
-/** Transições permitidas entre estados de campanha. */
 export const CAMPAIGN_TRANSITIONS: Record<CampaignStatus, readonly CampaignStatus[]> = {
   draft: ['active', 'cancelled'],
   active: ['paused', 'completed', 'cancelled'],
@@ -74,7 +70,6 @@ export const PARTICIPATION_STATUSES = [
 ] as const;
 export type ParticipationStatus = (typeof PARTICIPATION_STATUSES)[number];
 
-/** Participações que ainda representam uma abordagem em andamento para o telefone. */
 export const ACTIVE_PARTICIPATION_STATUSES: readonly ParticipationStatus[] = [
   'scheduled',
   'sent',

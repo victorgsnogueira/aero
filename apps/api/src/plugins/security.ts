@@ -1,19 +1,10 @@
 import fp from 'fastify-plugin';
 import type { FastifyInstance } from 'fastify';
 
-// Fronteira de acesso do navegador (sem login nesta versão — uso exclusivo do
-// proprietário em localhost ou, futuramente, pela tailnet privada):
-//  1. Host permitido: bloqueia DNS rebinding contra a porta local.
-//  2. Origin permitida quando presente: bloqueia outros sites.
-//  3. Requisições que alteram estado exigem o cabeçalho `X-Aero-Request: 1`.
-//     Navegadores não enviam cabeçalhos customizados entre origens sem preflight,
-//     e o CORS só autoriza as origens configuradas — isso bloqueia CSRF.
-// Rotas internas (webhook do gateway, health) usam autenticação própria.
-
 export interface SecurityOptions {
   allowedOrigins: string[];
   allowedHosts: string[];
-  /** Prefixos isentos do cabeçalho/origem (autenticados de outra forma). */
+
   exemptPrefixes: string[];
 }
 

@@ -20,16 +20,11 @@ export type SendOutcome =
 
 const MAX_CONNECT_RETRIES = 3;
 
-/**
- * Reverifica, com bloqueio da conversa, todas as regras antes de um envio AUTOMÁTICO.
- * Retorna motivo de cancelamento (definitivo) ou adiamento (temporário).
- */
 async function guardAutomatic(ctx: AppContext, tx: Tx, msg: Message): Promise<{ cancel?: string; defer?: string }> {
   const [conv] = await tx.select().from(conversations).where(eq(conversations.id, msg.conversationId)).for('update');
   if (!conv) return { cancel: 'Conversa inexistente' };
   if (conv.automationPaused || conv.state === 'human') return { cancel: 'Automação pausada: atendimento humano' };
 
-  // Resposta recebida depois do agendamento: suspende ações pendentes
   if (conv.lastInboundAt && conv.lastInboundAt > msg.createdAt && msg.purpose === 'first_contact') {
     return { cancel: 'Contato respondeu antes do envio' };
   }
@@ -39,7 +34,7 @@ async function guardAutomatic(ctx: AppContext, tx: Tx, msg: Message): Promise<{ 
     .from(suppressions)
     .where(and(eq(suppressions.phoneId, conv.phoneId), isNull(suppressions.liftedAt)))
     .limit(1);
-  // Única exceção: a confirmação (opcional) da própria recusa.
+
   if (sup && msg.purpose !== 'decline_ack') return { cancel: 'Contato suprimido (recusa/descadastro)' };
 
   const [phone] = await tx.select().from(phones).where(eq(phones.id, conv.phoneId));
@@ -76,13 +71,12 @@ async function applyOutcome(ctx: AppContext, msg: Message, outcome: SendOutcome)
   await ctx.db.transaction(async (tx) => {
     switch (outcome.kind) {
       case 'accepted': {
-        // O webhook pode ter registrado o status antes; nunca rebaixa.
+
         await tx
           .update(messages)
           .set({ status: sql`CASE WHEN ${messages.status} IN ('delivered','read') THEN ${messages.status} ELSE 'accepted' END`, externalId: outcome.externalId, sentAt: now, error: null, lockedAt: null })
           .where(eq(messages.id, msg.id));
-        // Só a primeira abordagem altera a situação da conversa (abaixo); respostas
-        // automáticas — como a confirmação de recusa — não reabrem uma conversa encerrada.
+
         await tx.update(conversations).set({ lastMessageAt: now }).where(eq(conversations.id, msg.conversationId));
         if (msg.purpose === 'first_contact' && msg.campaignContactId) {
           const [cc] = await tx.select().from(campaignContacts).where(eq(campaignContacts.id, msg.campaignContactId));
@@ -109,7 +103,7 @@ async function applyOutcome(ctx: AppContext, msg: Message, outcome: SendOutcome)
         await tx.update(messages).set({ status: 'failed', error: outcome.reason.slice(0, 500), lockedAt: null }).where(eq(messages.id, msg.id));
         break;
       case 'unknown':
-        // Sem reenvio automático: pode ter sido entregue ao WhatsApp.
+
         await tx.update(messages).set({ status: 'unknown', error: outcome.reason.slice(0, 500), sentAt: now, lockedAt: null }).where(eq(messages.id, msg.id));
         break;
     }
@@ -118,12 +112,6 @@ async function applyOutcome(ctx: AppContext, msg: Message, outcome: SendOutcome)
   await ctx.events.publish({ type: 'conversation.updated', conversationId: msg.conversationId });
 }
 
-/**
- * Envia uma mensagem já registrada (status `scheduled`). Fluxo:
- *  1) transação curta: reverificação + `processing` (impede envio duplo);
- *  2) chamada ao gateway fora da transação;
- *  3) registro do resultado. Timeout/erro 5xx => `unknown` (sem reenvio cego).
- */
 export async function sendMessage(ctx: AppContext, messageId: number): Promise<SendOutcome> {
   const prep = await ctx.db.transaction(async (tx) => {
     const [msg] = await tx.select().from(messages).where(eq(messages.id, messageId)).for('update');
@@ -137,8 +125,7 @@ export async function sendMessage(ctx: AppContext, messageId: number): Promise<S
     } else {
       const [conv] = await tx.select().from(conversations).where(eq(conversations.id, msg.conversationId)).for('update');
       const [phone] = conv ? await tx.select().from(phones).where(eq(phones.id, conv.phoneId)) : [];
-      // Com lista de teste ativa, a trava falha fechada: contato sem número
-      // identificável (ex.: apenas LID) também é bloqueado.
+
       if (ctx.config.sending.allowlist.length && (!phone?.e164 || !ctx.config.sending.allowlist.includes(phone.e164))) {
         return {
           msg,
@@ -166,7 +153,7 @@ export async function sendMessage(ctx: AppContext, messageId: number): Promise<S
     outcome = { kind: 'accepted', externalId: res.externalId };
   } catch (err) {
     if (err instanceof HttpError && err.kind === 'connect') {
-      // Não chegou ao gateway: seguro tentar de novo depois
+
       outcome =
         msg.attempts < MAX_CONNECT_RETRIES
           ? { kind: 'deferred', reason: `Gateway inacessível: ${err.message}` }
@@ -184,7 +171,6 @@ export async function sendMessage(ctx: AppContext, messageId: number): Promise<S
   return outcome;
 }
 
-/** Mensagens presas em `processing` (ex.: worker reiniciado no meio do envio) viram `unknown`. */
 export async function recoverStuckProcessing(ctx: AppContext, olderThanMs = 120_000): Promise<number> {
   const cutoff = new Date(ctx.now().getTime() - olderThanMs);
   const res = await ctx.db
@@ -194,10 +180,6 @@ export async function recoverStuckProcessing(ctx: AppContext, olderThanMs = 120_
   return (res[0] as { affectedRows: number }).affectedRows;
 }
 
-/**
- * Reconciliação de envios com resultado desconhecido: procura no histórico do
- * gateway uma mensagem nossa com o mesmo conteúdo enviada perto do horário.
- */
 export async function reconcileUnknown(ctx: AppContext, limit = 20): Promise<number> {
   const rows = await ctx.db
     .select({ m: messages, jid: conversations.jid })

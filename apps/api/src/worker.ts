@@ -10,10 +10,6 @@ import { processWebhookEvent, RetryLater } from './modules/automation/inbound.ts
 import { closeNoReply, schedulePendingForActiveCampaigns, requeueUnprocessedWebhooks } from './modules/automation/maintenance.ts';
 import { syncSessionStatus } from './modules/whatsapp/session.ts';
 
-// Processo de tarefas em segundo plano. Estado de verdade no MySQL; filas apenas
-// disparam processamento. Após reinício, a manutenção reencontra o trabalho
-// pendente (varreduras ativas, outbox, webhooks não processados, envios).
-
 const runtime = createRuntime(undefined, 'worker');
 const { ctx } = runtime;
 const connection = redisConnection(ctx.config.redisUrl);
@@ -77,7 +73,7 @@ workers.push(
       try {
         return await processWebhookEvent(ctx, job.data.webhookEventId);
       } catch (err) {
-        if (err instanceof RetryLater) throw err; // BullMQ reprocessa com backoff
+        if (err instanceof RetryLater) throw err;
         throw err;
       }
     },
@@ -85,7 +81,6 @@ workers.push(
   ),
 );
 
-// Manutenção periódica (job repetível único)
 workers.push(
   new Worker(
     QUEUES.maintenance,
@@ -122,7 +117,7 @@ for (const w of workers) {
 await queues.maintenance.upsertJobScheduler('outbox-relay', { every: 1000 }, { name: 'outbox.relay' });
 await queues.maintenance.upsertJobScheduler('housekeeping', { every: 60_000 }, { name: 'housekeeping' });
 await queues.maintenance.upsertJobScheduler('revalidate', { every: 6 * 3600_000 }, { name: 'revalidate' });
-// Recuperação imediata ao iniciar
+
 await queues.maintenance.add('housekeeping', {}, { jobId: `boot-${Date.now()}` });
 ctx.log.info('Worker iniciado');
 
